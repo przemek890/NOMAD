@@ -1,0 +1,43 @@
+readonly COMPOSE_FILE=/opt/nomad-box/compose/nomad.yaml
+readonly IMAGES_DIR=/opt/nomad-box/images
+readonly SECRETS_FILE="${NOMAD_HOME}/secrets.env"
+readonly API_URL=http://localhost:8080/api
+readonly HOST_OLLAMA_PORT=11435
+readonly HOST_OLLAMA_URL="http://host.docker.internal:${HOST_OLLAMA_PORT}"
+
+log() {
+  printf '\033[1;32m[nomad-box]\033[0m %s\n' "$*"
+}
+
+fail() {
+  printf '\033[1;31m[nomad-box]\033[0m %s\n' "$*" >&2
+  exit 1
+}
+
+is_true() {
+  [[ ${1,,} =~ ^(1|true|yes|on)$ ]]
+}
+
+wait_for() {
+  local seconds=$1
+  shift
+  local deadline=$((SECONDS + seconds))
+  until "$@" >/dev/null 2>&1; do
+    ((SECONDS < deadline)) || return 1
+    sleep 3
+  done
+}
+
+stack() {
+  docker compose -p project-nomad -f "$COMPOSE_FILE" --env-file "$SECRETS_FILE" "$@"
+}
+
+api() {
+  local method=$1 path=$2
+  shift 2
+  curl -fsS -X "$method" -H 'Content-Type: application/json' "${API_URL}${path}" "$@"
+}
+
+json() {
+  jq -cn "$@"
+}

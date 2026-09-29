@@ -1,0 +1,75 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+source /usr/local/lib/nomad-box/common.sh
+
+start_engine() {
+  log "Uruchamianie wewnętrznego Docker Engine"
+  dockerd-entrypoint.sh dockerd --host=unix:///var/run/docker.sock >/var/log/dockerd.log 2>&1 &
+  ENGINE_PID=$!
+  trap stop_all TERM INT
+  wait_for 120 docker info || fail "Docker Engine nie wystartował. Czy kontener działa z --privileged? Zobacz /var/log/dockerd.log"
+}
+
+stop_all() {
+  log "Zatrzymywanie NOMAD"
+  stack stop --timeout 30 || true
+  kill -TERM "$ENGINE_PID" 2>/dev/null || true
+  wait "$ENGINE_PID" || true
+  exit 0
+}
+
+load_images() {
+  local archive ref
+  shopt -s nullglob
+  local archives=("$IMAGES_DIR"/*.tar)
+  ((${#archives[@]})) || fail "Brak obrazów w ${IMAGES_DIR}. Uruchom: make build"
+  for archive in "${archives[@]}"; do
+    ref=$(tar -xOf "$archive" manifest.json | jq -r '.[0].RepoTags[0] // empty')
+    if [[ -n $ref ]] && docker image inspect "$ref" >/dev/null 2>&1; then
+      continue
+    fi
+    log "Wczytywanie obrazu ${ref:-$archive}"
+    docker load --quiet --input "$archive"
+  done
+}
+
+ensure_secrets() {
+  mkdir -p "${NOMAD_HOME}"/{storage/logs,storage/kb_uploads,mysql,redis}
+  [[ -s $SECRETS_FILE ]] && return
+  if [[ -n $(ls -A "${NOMAD_HOME}/mysql") ]]; then
+    fail "Brak ${SECRETS_FILE}, a katalog mysql zawiera dane. Przywróć plik z hasłami albo usuń ${NOMAD_HOME}/mysql."
+  fi
+  log "Generowanie sekretów w ${SECRETS_FILE}"
+  umask 077
+  cat >"$SECRETS_FILE" <<EOF
+NOMAD_APP_KEY=$(openssl rand -hex 32)
+NOMAD_DB_PASSWORD=$(openssl rand -hex 16)
+NOMAD_DB_ROOT_PASSWORD=$(openssl rand -hex 16)
+EOF
+}
+
+start_host_ollama_relay() {
+  is_true "$NOMAD_HOST_OLLAMA" || return 0
+  log "Przekierowanie ${HOST_OLLAMA_URL} -> Ollama na hoście (host.docker.internal:11434)"
+  socat "TCP-LISTEN:${HOST_OLLAMA_PORT},fork,reuseaddr" TCP:host.docker.internal:11434 &
+}
+
+main() {
+  start_engine
+  load_images
+  ensure_secrets
+  start_host_ollama_relay
+  nomad-domain caddyfile
+  log "Uruchamianie stosu Project NOMAD ${NOMAD_VERSION}"
+  stack up --detach --remove-orphans
+  if wait_for 600 curl -fsS "${API_URL}/health"; then
+    nomad-domain links || log "Nie udało się ustawić linków HTTPS aplikacji"
+    log "Command Center gotowy: ${NOMAD_URL}"
+  else
+    log "Command Center jeszcze nie odpowiada. Sprawdź: make logs-admin"
+  fi
+  wait "$ENGINE_PID"
+}
+
+main "$@"

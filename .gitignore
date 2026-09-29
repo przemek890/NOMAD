@@ -1,0 +1,11 @@
+.env
+data/
+.build/
+dist/
+*.log
+.DS_Store
+._*
+Thumbs.db
+.idea/
+.vscode/
+*.swp

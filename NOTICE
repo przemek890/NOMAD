@@ -1,0 +1,13 @@
+NOMAD Box
+Copyright 2026 NOMAD Box contributors
+
+This product builds and runs Project NOMAD
+(https://github.com/Crosstalk-Solutions/project-nomad),
+Copyright 2024-2026 Crosstalk Solutions LLC, licensed under the Apache License 2.0.
+
+box/compose/nomad.yaml is derived from install/management_compose.yaml of Project NOMAD.
+Changes: images built from source for amd64 and arm64, secrets injected from secrets.env,
+the self-updater sidecar removed, stack run inside a Docker-in-Docker container.
+
+"Project NOMAD" and "Crosstalk Solutions" are names of their respective owners.
+This project is unofficial and is not endorsed by Crosstalk Solutions LLC.

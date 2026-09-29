@@ -1,0 +1,44 @@
+name: nomad-box
+
+services:
+  nomad:
+    image: ${NOMAD_BOX_IMAGE:-nomad-box:latest}
+    container_name: nomad-box
+    hostname: nomad-box
+    privileged: true
+    restart: unless-stopped
+    stop_grace_period: 90s
+    env_file:
+      - path: .env
+        required: false
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    ports:
+      - ${NOMAD_PORT:-8080}:8080
+      - 8090:8090
+      - 8100:8100
+      - 8200:8200
+      - 8310:8310
+      - 8400-8500:8400-8500
+      - 9999:9999
+    volumes:
+      - ${NOMAD_DATA_DIR:-./data}:/opt/project-nomad
+      - ${NOMAD_ENGINE_VOLUME:-nomad-engine}:/var/lib/docker
+
+  proxy:
+    image: caddy:2.10-alpine
+    container_name: nomad-proxy
+    profiles:
+      - https
+    restart: unless-stopped
+    command: caddy run --config /data/Caddyfile --adapter caddyfile --watch
+    depends_on:
+      nomad:
+        condition: service_healthy
+    ports:
+      - ${NOMAD_HTTPS_PORT:-443}:443
+    volumes:
+      - ${NOMAD_DATA_DIR:-./data}/caddy:/data
+
+volumes:
+  nomad-engine:

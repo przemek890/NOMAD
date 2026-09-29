@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+source /usr/local/lib/nomad-box/common.sh
+
+readonly CADDY_DIR="${NOMAD_HOME}/caddy"
+readonly CADDYFILE="${CADDY_DIR}/Caddyfile"
+
+each_app() {
+  local app name target
+  for app in $NOMAD_APPS; do
+    name=${app%%=*}
+    target=${app#*=}
+    "$@" "$name" "$target"
+  done
+}
+
+site() {
+  local host=$1 target=$2
+  if [[ $target == https:* ]]; then
+    printf '%s {\n\treverse_proxy https://nomad:%s {\n\t\ttransport http {\n\t\t\ttls_insecure_skip_verify\n\t\t}\n\t}\n}\n\n' "$host" "${target#https:}"
+  else
+    printf '%s {\n\treverse_proxy nomad:%s\n}\n\n' "$host" "$target"
+  fi
+}
+
+app_site() {
+  site "$1.${NOMAD_DOMAIN}" "$2"
+}
+
+write_caddyfile() {
+  mkdir -p "$CADDY_DIR"
+  {
+    printf '{\n\tlocal_certs\n\tauto_https disable_redirects\n}\n\n'
+    site "$NOMAD_DOMAIN" 8080
+    each_app app_site
+  } >"${CADDYFILE}.tmp"
+  mv "${CADDYFILE}.tmp" "$CADDYFILE"
+  log "Caddyfile dla https://${NOMAD_DOMAIN} zapisany w ${CADDYFILE}"
+}
+
+service_for() {
+  docker exec -e MYSQL_PWD="$NOMAD_DB_PASSWORD" nomad_mysql \
+    mysql --user=nomad_user --database=nomad --batch --skip-column-names \
+    --execute="SELECT service_name FROM services WHERE ui_location = '$1' AND is_dependency_service = 0 LIMIT 1"
+}
+
+link_app() {
+  local name=$1 target=$2 service
+  service=$(service_for "$target")
+  [[ -n $service ]] || return 0
+  api PUT /system/services/custom-url \
+    --data "$(json --arg s "$service" --arg u "https://${name}.${NOMAD_DOMAIN}" '{service_name: $s, custom_url: $u}')" >/dev/null
+}
+
+link_apps() {
+  source "$SECRETS_FILE"
+  each_app link_app
+  log "Linki aplikacji w panelu wskazują na https://*.${NOMAD_DOMAIN}"
+}
+
+hosts() {
+  local ip=${1:-127.0.0.1} names=$NOMAD_DOMAIN app
+  for app in $NOMAD_APPS; do
+    names+=" ${app%%=*}.${NOMAD_DOMAIN}"
+  done
+  printf '%s %s\n' "$ip" "$names"
+}
+
+[[ -n ${NOMAD_DOMAIN:-} ]] || exit 0
+
+case ${1:-} in
+  caddyfile) write_caddyfile ;;
+  links) link_apps ;;
+  hosts) hosts "${2:-}" ;;
+  *) fail "Użycie: nomad-domain caddyfile|links|hosts [ip]" ;;
+esac

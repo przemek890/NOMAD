@@ -1,0 +1,92 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+source /usr/local/lib/nomad-box/common.sh
+source "$SECRETS_FILE"
+
+service_status() {
+  docker exec -e MYSQL_PWD="$NOMAD_DB_PASSWORD" nomad_mysql \
+    mysql --user=nomad_user --database=nomad --batch --skip-column-names \
+    --execute="SELECT CONCAT(installed, ':', installation_status) FROM services WHERE service_name = '$1'"
+}
+
+model_installed() {
+  api GET /ollama/installed-models | jq -e --arg model "$1" 'any(.[]; .name == $model or .name == "\($model):latest")'
+}
+
+await_service() {
+  local name=$1 status
+  local deadline=$((SECONDS + 1800))
+  while ((SECONDS < deadline)); do
+    status=$(service_status "$name" 2>/dev/null) || status=unknown
+    [[ $status == 1:* ]] && return
+    [[ $status == *:error ]] && fail "Instalacja ${name} nie powiodła się. Szczegóły: make logs-admin"
+    sleep 5
+  done
+  fail "Usługa ${name} nie zainstalowała się w 30 min. Szczegóły: make logs-admin"
+}
+
+install_service() {
+  local name=$1 status
+  status=$(service_status "$name")
+  [[ -n $status ]] || fail "Nieznana usługa ${name}"
+  if [[ $status == 1:* ]]; then
+    log "✓ usługa ${name} jest już zainstalowana"
+    return
+  fi
+  log "Instalacja usługi ${name}"
+  [[ $status == *:installing ]] || api POST /system/services/install --data "$(json --arg n "$name" '{service_name: $n}')" >/dev/null
+  await_service "$name"
+  log "✓ ${name}"
+}
+
+configure_ai() {
+  if is_true "$NOMAD_HOST_OLLAMA"; then
+    log "Podłączanie Ollamy z hosta (${HOST_OLLAMA_URL})"
+    api POST /ollama/configure-remote --data "$(json --arg u "$HOST_OLLAMA_URL" '{remoteUrl: $u}')" >/dev/null \
+      || fail "Ollama na hoście nie odpowiada. Uruchom ją poleceniem: ollama serve"
+  else
+    install_service nomad_ollama
+  fi
+}
+
+pull_model() {
+  local model=$1
+  if model_installed "$model" >/dev/null; then
+    log "✓ model ${model} jest już pobrany"
+    return
+  fi
+  log "Pobieranie modelu ${model}"
+  api POST /ollama/models --data "$(json --arg m "$model" '{model: $m}')" >/dev/null
+  wait_for 7200 model_installed "$model" || fail "Model ${model} nie został pobrany w ciągu 2 h"
+  log "✓ ${model}"
+}
+
+queue_zim() {
+  log "Kolejkowanie pobrania ZIM: $1"
+  api POST /zim/download-remote --data "$(json --arg u "$1" '{url: $u}')" >/dev/null
+}
+
+main() {
+  wait_for 600 api GET /health || fail "Command Center nie działa. Uruchom najpierw: make up"
+  local item
+  for item in $NOMAD_PRELOAD_SERVICES; do
+    if [[ $item == nomad_ollama ]]; then
+      configure_ai
+    else
+      install_service "$item"
+    fi
+  done
+  for item in $NOMAD_PRELOAD_MODELS; do
+    pull_model "$item"
+  done
+  for item in $NOMAD_PRELOAD_ZIMS; do
+    queue_zim "$item"
+  done
+  log "Usługi i modele są gotowe"
+  if [[ -n $NOMAD_PRELOAD_ZIMS ]]; then
+    log "Pliki ZIM dodano do kolejki; sprawdź ich pobieranie: ${NOMAD_URL}/settings/zim"
+  fi
+}
+
+main "$@"
