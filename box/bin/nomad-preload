@@ -51,9 +51,9 @@ install_service() {
 }
 
 add_service() {
-  if [[ $1 == nomad_ollama ]] && is_true "$NOMAD_HOST_OLLAMA"; then
-    api POST /ollama/configure-remote --data "$(json --arg u "$HOST_OLLAMA_URL" '{remoteUrl: $u}')" >/dev/null \
-      || fail "Ollama na hoście nie odpowiada. Uruchom ją poleceniem: ollama serve"
+  if [[ $1 == nomad_ollama && -n $NOMAD_OLLAMA_URL ]]; then
+    api POST /ollama/configure-remote --data "$(json --arg u "$OLLAMA_RELAY_URL" '{remoteUrl: $u}')" >/dev/null \
+      || fail "LLM pod ${NOMAD_OLLAMA_URL} nie odpowiada. Uruchom Ollamę albo popraw NOMAD_OLLAMA_URL w .env"
   else
     install_service "$1"
   fi
@@ -79,6 +79,14 @@ add_map() {
   [[ -d ${MAPS_DIR}/basemaps-assets ]] || api POST /maps/download-base-assets --data '{}' >/dev/null
   log "Pobieranie mapy w tle: ${code}"
   api POST /maps/extract --data "$(json --arg c "$code" '{countries: [$c]}')" >/dev/null
+}
+
+add_category() {
+  local count
+  count=$(api POST /zim/download-category-tier \
+    --data "$(json --arg c "${1%-*}" --arg t "$1" '{categorySlug: $c, tierSlug: $t}')" | jq '.resources | length') \
+    || fail "Nie udało się pobrać kolekcji ${1}"
+  [[ $count == 0 ]] || log "Pobieranie w tle: kolekcja ${1} (${count} plików)"
 }
 
 add_model() {
@@ -107,7 +115,7 @@ main() {
   wait_for 600 api GET /health || fail "Command Center nie działa. Uruchom najpierw: make up"
   [[ -f $SOURCES ]] || fail "Brak ${SOURCES}"
   local kind item
-  for kind in service zim map model; do
+  for kind in service zim category map model; do
     for item in $(items "$kind"); do
       ("add_${kind}" "$item") || log "✗ Pominięto ${kind} ${item}"
     done

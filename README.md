@@ -95,11 +95,17 @@ Lista treści jest częścią repozytorium. Przy każdym starcie NOMAD instaluje
 | `content/sources.txt` | usługi, pliki ZIM (Wikipedia, poradniki), mapy krajów i modele AI |
 | `content/knowledge/` | Twoje dokumenty (PDF, DOCX, EPUB, TXT, MD, obrazy), które trafiają do bazy wiedzy asystenta AI |
 
-Domyślnie to polska Wikipedia bez obrazków (8 GB), mapa Polski (3 GB) oraz modele `llama3.2:3b` i `nomic-embed-text` (2,3 GB). Pliki ZIM wyszukasz w [katalogu Kiwix](https://library.kiwix.org); adres bez daty, np. `https://download.kiwix.org/zim/wikipedia/wikipedia_pl_all_nopic`, oznacza zawsze najnowszą wersję. Po zmianie listy uruchom `make preload` albo `make restart`.
+Domyślnie to około 20 GB: polska Wikipedia bez obrazków (8 GB), kolekcje NOMAD *Medicine – Comprehensive* (7 GB), *DIY – Standard* (2,3 GB) i *Agriculture – Essential* oraz mapa Polski (3 GB). Pliki ZIM wyszukasz w [katalogu Kiwix](https://library.kiwix.org); adres bez daty, np. `https://download.kiwix.org/zim/wikipedia/wikipedia_pl_all_nopic`, oznacza zawsze najnowszą wersję. Po zmianie listy uruchom `make preload` albo `make restart`.
 
 Pobrane treści są w `data/` i nie trafiają do repozytorium. Aby przenieść NOMAD razem z treściami bez ponownego pobierania, skopiuj cały katalog `data/` albo trzymaj go na dysku zewnętrznym, ustawiając `NOMAD_DATA_DIR` w `.env`. Pliki ZIM wrzucone ręcznie do `data/storage/zim/` są dodawane do biblioteki przy następnym starcie.
 
 Pobieranie trwa w tle; przed odłączeniem internetu sprawdź w panelu, czy się zakończyło.
+
+## Asystent AI
+
+NOMAD korzysta z Ollamy uruchomionej na tym samym komputerze pod adresem z `NOMAD_OLLAMA_URL` w `.env` (domyślnie `http://localhost:11434`). Zainstaluj ją z [ollama.com](https://ollama.com) i uruchom przed `make`. Modele z `content/sources.txt` (`llama3.2:3b`, `nomic-embed-text`) pobiorą się do niej automatycznie. Na Macu Ollama poza kontenerem korzysta z GPU, więc odpowiada kilka razy szybciej.
+
+Ollama na innym komputerze: ustaw jego adres, np. `NOMAD_OLLAMA_URL=http://192.168.1.20:11434`, a na tamtym komputerze uruchom Ollamę z `OLLAMA_HOST=0.0.0.0`. Na Linuksie i Raspberry Pi `OLLAMA_HOST=0.0.0.0` jest potrzebne także dla Ollamy na tym samym komputerze. Pusta wartość `NOMAD_OLLAMA_URL` instaluje Ollamę w kontenerze NOMAD.
 
 ## Dane i sieć
 
@@ -121,3 +127,7 @@ Domyślna konfiguracja udostępnia port 8080, porty aplikacji oraz zakres 8400�
 Telefon lub inny komputer w tej samej sieci: `http://ADRES-KOMPUTERA:8080`.
 
 Chrome i Firefox same rozpoznają adresy `*.nomad.localhost`. W Safari i na innych urządzeniach dopisz do `/etc/hosts` linię wypisaną przez `make hosts` (dla innych urządzeń: `make hosts IP=ADRES-KOMPUTERA`) i zaufaj certyfikatowi z `make ca`.
+
+## Aktualizacja
+
+Przycisk **Start Update** w panelu nie działa w NOMAD Box, bo obrazy są budowane ze źródeł. Aby zaktualizować, zmień `NOMAD_REF` w `docker-bake.hcl` na nową wersję z [listy wydań](https://github.com/Crosstalk-Solutions/project-nomad/releases) i uruchom `make build restart`. Dane zostają.

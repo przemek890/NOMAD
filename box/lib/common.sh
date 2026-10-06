@@ -2,8 +2,8 @@ readonly COMPOSE_FILE=/opt/nomad-box/compose/nomad.yaml
 readonly IMAGES_DIR=/opt/nomad-box/images
 readonly SECRETS_FILE="${NOMAD_HOME}/secrets.env"
 readonly API_URL=http://localhost:8080/api
-readonly HOST_OLLAMA_PORT=11435
-readonly HOST_OLLAMA_URL="http://host.docker.internal:${HOST_OLLAMA_PORT}"
+readonly OLLAMA_RELAY_PORT=11435
+readonly OLLAMA_RELAY_URL="http://host.docker.internal:${OLLAMA_RELAY_PORT}"
 
 : "${NOMAD_URL:=${NOMAD_DOMAIN:+https://${NOMAD_DOMAIN}}}"
 export NOMAD_URL=${NOMAD_URL:-http://localhost:8080}
@@ -15,10 +15,6 @@ log() {
 fail() {
   printf '\033[1;31m[nomad-box]\033[0m %s\n' "$*" >&2
   exit 1
-}
-
-is_true() {
-  [[ ${1,,} =~ ^(1|true|yes|on)$ ]]
 }
 
 wait_for() {

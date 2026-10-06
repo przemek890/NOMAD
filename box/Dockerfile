@@ -24,9 +24,10 @@ ENV NOMAD_VERSION=${NOMAD_VERSION} \
     NOMAD_DOZZLE_IMAGE=${NOMAD_DOZZLE_IMAGE} \
     NOMAD_HOME=/opt/project-nomad \
     DOCKER_TLS_CERTDIR="" \
-    NOMAD_HOST_OLLAMA=false \
+    NOMAD_OLLAMA_URL="" \
+    NOMAD_INTERNET_TEST_URL=https://1.1.1.1/cdn-cgi/trace \
     NOMAD_DOMAIN="" \
-    NOMAD_APPS="wiki=8090 cyberchef=8100 notes=8200 kolibri=8310 pdf=8400 files=8410 books=8420 tools=8430 mesh=8450 homebox=8470 vault=https:8480 media=8490 meshcore=https:8500 logs=9999"
+    NOMAD_APPS="wiki=8090 cyberchef=8100 notes=8200 kolibri=8310 pdf=8400 files=8410 books=8420 tools=8430 mesh=8450 translate=8460 homebox=8470 vault=https:8480 media=8490 meshcore=https:8500 logs=9999"
 
 COPY --from=images / /opt/nomad-box/images/
 COPY box/compose/ /opt/nomad-box/compose/

@@ -1,5 +1,5 @@
 variable "NOMAD_REF" {
-  default = "v1.34.1"
+  default = "v1.35.1"
 }
 
 variable "NOMAD_BOX_IMAGE" {

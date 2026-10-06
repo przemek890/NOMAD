@@ -33,6 +33,7 @@ services:
       REDIS_HOST: redis
       REDIS_PORT: 6379
       DISABLE_COMPRESSION: "false"
+      INTERNET_STATUS_TEST_URL: ${NOMAD_INTERNET_TEST_URL}
     depends_on:
       mysql:
         condition: service_healthy

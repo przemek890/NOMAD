@@ -10,9 +10,14 @@ service nomad_cyberchef
 # Pliki ZIM z download.kiwix.org; adres bez daty i .zim oznacza najnowszą wersję
 zim https://download.kiwix.org/zim/wikipedia/wikipedia_pl_all_nopic
 
+# Kolekcje NOMAD (Easy Setup): <kategoria>-<poziom>; wyższy poziom zawiera niższe
+category medicine-comprehensive
+category diy-standard
+category agriculture-essential
+
 # Mapy krajów (kod ISO)
 map PL
 
-# Modele AI (Ollama)
+# Modele AI, pobierane do Ollamy wskazanej w NOMAD_OLLAMA_URL
 model llama3.2:3b
 model nomic-embed-text:v1.5
