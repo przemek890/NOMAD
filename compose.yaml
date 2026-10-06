@@ -25,6 +25,7 @@ services:
     volumes:
       - ${NOMAD_DATA_DIR:-./data}:/opt/project-nomad
       - nomad-engine:/var/lib/docker
+      - ./content:/opt/nomad-box/content:ro
 
   proxy:
     image: caddy:2.10-alpine

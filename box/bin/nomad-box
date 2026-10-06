@@ -68,6 +68,7 @@ main() {
   if wait_for 600 curl -fsS "${API_URL}/health"; then
     nomad-domain links || log "Nie udało się ustawić linków HTTPS aplikacji"
     log "Command Center gotowy: ${NOMAD_URL}"
+    nomad-preload &
   else
     log "Command Center jeszcze nie odpowiada. Sprawdź: make logs-admin"
   fi

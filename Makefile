@@ -1,5 +1,5 @@
 SHELL := /bin/bash
-.DEFAULT_GOAL := help
+.DEFAULT_GOAL := up
 
 -include .env
 export NOMAD_BOX_IMAGE ?= nomad-box:latest
@@ -11,10 +11,10 @@ ARCHIVE := dist/nomad-box.tar.gz
 ROOT_CA := dist/nomad-root-ca.crt
 IP ?= 127.0.0.1
 
-.PHONY: help init builder images box build up down restart logs logs-admin status preload shell hosts ca trust export import prune clean
+.PHONY: help init builder images box build image up down restart logs logs-admin status preload shell hosts ca trust export import prune clean
 
 help: ## Wyświetla listę poleceń
-	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  \033[36m%-11s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^[a-z-]+:.*## ' $(firstword $(MAKEFILE_LIST)) | awk 'BEGIN {FS = ":.*## "} {printf "  \033[36m%-11s\033[0m %s\n", $$1, $$2}'
 
 .env:
 	cp .env.example .env
@@ -32,9 +32,12 @@ box: builder ## Buduje obraz nomad-box z gotowymi obrazami w środku
 
 build: images box ## Pełna budowa (images + box)
 
-up: init ## Uruchamia NOMAD
+image:
+	@docker image inspect $(NOMAD_BOX_IMAGE) >/dev/null 2>&1 || $(MAKE) build
+
+up: init image ## Buduje (jeśli trzeba) i uruchamia NOMAD z treściami z content/ (domyślne polecenie: make)
 	docker compose up --detach
-	@echo "Pierwszy start trwa kilka minut. Postęp i adres panelu: make logs"
+	@echo "NOMAD startuje i pobiera treści w tle. Postęp i adres panelu: make logs"
 
 down: ## Zatrzymuje NOMAD (dane zostają)
 	docker compose down
@@ -50,7 +53,7 @@ logs-admin: ## Logi Command Center
 status: ## Stan usług wewnątrz nomad-box
 	$(BOX) docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
 
-preload: ## Instaluje usługi, modele AI i treści zdefiniowane w .env
+preload: ## Ponownie instaluje treści z content/ bez restartu
 	$(BOX) nomad-preload
 
 shell: ## Powłoka wewnątrz nomad-box

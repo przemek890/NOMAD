@@ -29,25 +29,19 @@ Przygotuj około 30 GB wolnego miejsca i połączenie z internetem na czas budow
    cd NOMAD
    ```
 
-4. Zbuduj NOMAD:
+4. Zbuduj i uruchom NOMAD. Pierwsze uruchomienie buduje obrazy (kilka minut), a potem w tle instaluje usługi i pobiera treści z `content/`:
 
    ```bash
-   make build
+   make
    ```
 
-5. Uruchom:
-
-   ```bash
-   make up
-   ```
-
-6. Pozwól przeglądarce ufać lokalnemu certyfikatowi. Mac poprosi o hasło:
+5. Pozwól przeglądarce ufać lokalnemu certyfikatowi. Mac poprosi o hasło:
 
    ```bash
    make trust
    ```
 
-7. Otwórz w przeglądarce **https://nomad.localhost**.
+6. Otwórz w przeglądarce **https://nomad.localhost**. Postęp pobierania pokaże `make logs`.
 
 ## Instalacja na Windowsie
 
@@ -65,7 +59,7 @@ Przygotuj około 30 GB wolnego miejsca i połączenie z internetem na czas budow
    sudo apt update && sudo apt install -y git make
    ```
 
-4. Wykonaj kroki od 3 do 7 z instrukcji dla Maca w oknie Ubuntu. `make trust` poprosi w okienku Windows o zgodę administratora.
+4. Wykonaj kroki od 3 do 6 z instrukcji dla Maca w oknie Ubuntu. `make trust` poprosi w okienku Windows o zgodę administratora.
 
 ## Instalacja na Raspberry Pi 5
 
@@ -86,21 +80,26 @@ Przygotuj około 30 GB wolnego miejsca i połączenie z internetem na czas budow
    sudo reboot
    ```
 
-4. Wykonaj kroki od 3 do 7 z instrukcji dla Maca. Budowa na Pi może potrwać znacznie dłużej.
+4. Wykonaj kroki od 3 do 6 z instrukcji dla Maca. Budowa na Pi może potrwać znacznie dłużej.
 
-Zamiast budować na Pi, możesz zbudować obraz na Macu i przenieść go plikiem: `make build export` na Macu, skopiuj projekt razem z `dist/nomad-box.tar.gz` na Pi i uruchom tam `make import up`. Na komputerze z procesorem Intel lub AMD buduj poleceniem `PLATFORM=linux/arm64 make build export`.
+Zamiast budować na Pi, możesz zbudować obraz na Macu i przenieść go plikiem: `make build export` na Macu, skopiuj projekt razem z `dist/nomad-box.tar.gz` na Pi i uruchom tam `make import` oraz `make`. Na komputerze z procesorem Intel lub AMD buduj poleceniem `PLATFORM=linux/arm64 make build export`.
 
 Z innego urządzenia w tej samej sieci otwórz `http://ADRES-PI:8080`. Adres Pi pokaże polecenie `hostname -I`.
 
-## Przygotowanie treści
+## Treści
 
-Z włączonym internetem zainstaluj zestaw startowy: serwer Kiwix, asystenta AI z modelami, notatki i CyberChef:
+Lista treści jest częścią repozytorium. Przy każdym starcie NOMAD instaluje to, czego jeszcze nie ma, a pobrane rzeczy pomija:
 
-```bash
-make preload
-```
+| Plik | Co zawiera |
+|---|---|
+| `content/sources.txt` | usługi, pliki ZIM (Wikipedia, poradniki), mapy krajów i modele AI |
+| `content/knowledge/` | Twoje dokumenty (PDF, DOCX, EPUB, TXT, MD, obrazy), które trafiają do bazy wiedzy asystenta AI |
 
-`make preload` nie pobiera domyślnie Wikipedii ani innych plików ZIM. Dodaj je w panelu przez **Easy Setup** lub ustaw `NOMAD_PRELOAD_ZIMS` w `.env` przed uruchomieniem polecenia. Pobieranie ZIM odbywa się w tle; sprawdź jego zakończenie w panelu, zanim odłączysz internet. Podobnie pobierz potrzebne mapy i poradniki.
+Domyślnie to polska Wikipedia bez obrazków (8 GB), mapa Polski (3 GB) oraz modele `llama3.2:3b` i `nomic-embed-text` (2,3 GB). Pliki ZIM wyszukasz w [katalogu Kiwix](https://library.kiwix.org); adres bez daty, np. `https://download.kiwix.org/zim/wikipedia/wikipedia_pl_all_nopic`, oznacza zawsze najnowszą wersję. Po zmianie listy uruchom `make preload` albo `make restart`.
+
+Pobrane treści są w `data/` i nie trafiają do repozytorium. Aby przenieść NOMAD razem z treściami bez ponownego pobierania, skopiuj cały katalog `data/` albo trzymaj go na dysku zewnętrznym, ustawiając `NOMAD_DATA_DIR` w `.env`. Pliki ZIM wrzucone ręcznie do `data/storage/zim/` są dodawane do biblioteki przy następnym starcie.
+
+Pobieranie trwa w tle; przed odłączeniem internetu sprawdź w panelu, czy się zakończyło.
 
 ## Dane i sieć
 

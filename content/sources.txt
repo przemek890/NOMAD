@@ -1,0 +1,18 @@
+# Treści instalowane automatycznie przy każdym starcie (już pobrane są pomijane).
+# Jedna pozycja w linii: <rodzaj> <wartość>.
+
+# Usługi z panelu NOMAD
+service nomad_kiwix_server
+service nomad_ollama
+service nomad_flatnotes
+service nomad_cyberchef
+
+# Pliki ZIM z download.kiwix.org; adres bez daty i .zim oznacza najnowszą wersję
+zim https://download.kiwix.org/zim/wikipedia/wikipedia_pl_all_nopic
+
+# Mapy krajów (kod ISO)
+map PL
+
+# Modele AI (Ollama)
+model llama3.2:3b
+model nomic-embed-text:v1.5
