@@ -20,16 +20,15 @@ stop_all() {
 }
 
 load_images() {
-  local archive ref
+  local archive ref id
   shopt -s nullglob
   local archives=("$IMAGES_DIR"/*.tar)
   ((${#archives[@]})) || fail "Brak obrazów w ${IMAGES_DIR}. Uruchom: make build"
   for archive in "${archives[@]}"; do
-    ref=$(tar -xOf "$archive" manifest.json | jq -r '.[0].RepoTags[0] // empty')
-    if [[ -n $ref ]] && docker image inspect "$ref" >/dev/null 2>&1; then
-      continue
-    fi
-    log "Wczytywanie obrazu ${ref:-$archive}"
+    read -r ref id < <(tar -xOf "$archive" manifest.json \
+      | jq -r '.[0] | "\(.RepoTags[0] // "-") sha256:\(.Config | sub(".*/"; "") | rtrimstr(".json"))"')
+    [[ $(docker image inspect --format '{{.Id}}' "$ref" 2>/dev/null) == "$id" ]] && continue
+    log "Wczytywanie obrazu ${ref}"
     docker load --quiet --input "$archive"
   done
 }
@@ -41,12 +40,14 @@ ensure_secrets() {
     fail "Brak ${SECRETS_FILE}, a katalog mysql zawiera dane. Przywróć plik z hasłami albo usuń ${NOMAD_HOME}/mysql."
   fi
   log "Generowanie sekretów w ${SECRETS_FILE}"
-  umask 077
-  cat >"$SECRETS_FILE" <<EOF
+  (
+    umask 077
+    cat >"$SECRETS_FILE" <<EOF
 NOMAD_APP_KEY=$(openssl rand -hex 32)
 NOMAD_DB_PASSWORD=$(openssl rand -hex 16)
 NOMAD_DB_ROOT_PASSWORD=$(openssl rand -hex 16)
 EOF
+  )
 }
 
 start_host_ollama_relay() {
@@ -63,6 +64,7 @@ main() {
   nomad-domain caddyfile
   log "Uruchamianie stosu Project NOMAD ${NOMAD_VERSION}"
   stack up --detach --remove-orphans
+  docker image prune --force >/dev/null
   if wait_for 600 curl -fsS "${API_URL}/health"; then
     nomad-domain links || log "Nie udało się ustawić linków HTTPS aplikacji"
     log "Command Center gotowy: ${NOMAD_URL}"

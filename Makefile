@@ -1,11 +1,12 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 
+-include .env
+export NOMAD_BOX_IMAGE ?= nomad-box:latest
+
 BUILDER := nomad-builder
-export PLATFORM ?= linux/$(if $(filter x86_64 amd64,$(shell uname -m)),amd64,arm64)
-BAKE := docker buildx bake --file docker-bake.hcl --builder $(BUILDER)
+BAKE := docker buildx bake --file docker-bake.hcl --builder $(BUILDER) $(if $(PLATFORM),--set '*.platform=$(PLATFORM)')
 BOX := docker compose exec nomad
-IMAGE := $(or $(NOMAD_BOX_IMAGE),nomad-box:latest)
 ARCHIVE := dist/nomad-box.tar.gz
 ROOT_CA := dist/nomad-root-ca.crt
 IP ?= 127.0.0.1
@@ -15,13 +16,15 @@ IP ?= 127.0.0.1
 help: ## Wyświetla listę poleceń
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "} {printf "  \033[36m%-11s\033[0m %s\n", $$1, $$2}'
 
-init: ## Tworzy plik .env z szablonu
-	@test -f .env || cp .env.example .env
+.env:
+	cp .env.example .env
+
+init: .env ## Tworzy plik .env z szablonu
 
 builder:
 	@docker buildx inspect $(BUILDER) >/dev/null 2>&1 || docker buildx create --name $(BUILDER) --driver docker-container >/dev/null
 
-images: builder ## Buduje obrazy NOMAD dla arm64 do .build/images
+images: builder ## Buduje obrazy NOMAD do .build/images (PLATFORM=linux/arm64 dla innej architektury)
 	$(BAKE) images
 
 box: builder ## Buduje obraz nomad-box z gotowymi obrazami w środku
@@ -31,7 +34,7 @@ build: images box ## Pełna budowa (images + box)
 
 up: init ## Uruchamia NOMAD
 	docker compose up --detach
-	@echo "Command Center: $$(grep -m1 '^NOMAD_URL=' .env | cut -d= -f2-) (pierwszy start trwa kilka minut, postęp: make logs)"
+	@echo "Pierwszy start trwa kilka minut. Postęp i adres panelu: make logs"
 
 down: ## Zatrzymuje NOMAD (dane zostają)
 	docker compose down
@@ -53,7 +56,7 @@ preload: ## Instaluje usługi, modele AI i treści zdefiniowane w .env
 shell: ## Powłoka wewnątrz nomad-box
 	$(BOX) bash
 
-hosts: ## Wpis do /etc/hosts dla domeny (IP=adres dla innych urządzeń)
+hosts: ## Wypisuje linię do /etc/hosts dla domeny (IP=adres dla innych urządzeń)
 	@$(BOX) nomad-domain hosts $(IP)
 
 ca: ## Eksportuje certyfikat lokalnego CA do dist/nomad-root-ca.crt
@@ -70,9 +73,9 @@ else
 	sudo cp $(ROOT_CA) /usr/local/share/ca-certificates/nomad-root-ca.crt && sudo update-ca-certificates
 endif
 
-export: ## Zapisuje obraz do dist/nomad-box.tar.gz (przeniesienie na Raspberry Pi)
+export: ## Zapisuje obraz do dist/nomad-box.tar.gz (przeniesienie na inny komputer)
 	@mkdir -p dist
-	docker save $(IMAGE) | gzip > $(ARCHIVE)
+	docker save $(NOMAD_BOX_IMAGE) | gzip > $(ARCHIVE)
 
 import: ## Wczytuje obraz z dist/nomad-box.tar.gz
 	gunzip --stdout $(ARCHIVE) | docker load

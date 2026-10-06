@@ -88,6 +88,8 @@ Przygotuj około 30 GB wolnego miejsca i połączenie z internetem na czas budow
 
 4. Wykonaj kroki od 3 do 7 z instrukcji dla Maca. Budowa na Pi może potrwać znacznie dłużej.
 
+Zamiast budować na Pi, możesz zbudować obraz na Macu i przenieść go plikiem: `make build export` na Macu, skopiuj projekt razem z `dist/nomad-box.tar.gz` na Pi i uruchom tam `make import up`. Na komputerze z procesorem Intel lub AMD buduj poleceniem `PLATFORM=linux/arm64 make build export`.
+
 Z innego urządzenia w tej samej sieci otwórz `http://ADRES-PI:8080`. Adres Pi pokaże polecenie `hostname -I`.
 
 ## Przygotowanie treści
@@ -104,6 +106,8 @@ make preload
 
 Dane aplikacji są w `data/`, a obrazy wewnętrznego Dockera w wolumenie `nomad-engine`. `make down` zatrzymuje usługi i zachowuje dane. `make clean` usuwa wolumen silnika; przy następnym starcie obrazy zostaną ponownie wczytane.
 
+Aby działać bez HTTPS (tylko `http://localhost:8080`), usuń z `.env` linie `COMPOSE_PROFILES` i `NOMAD_DOMAIN`. Pozostałe ustawienia i ich wartości domyślne są opisane w `.env.example`.
+
 Domyślna konfiguracja udostępnia port 8080, porty aplikacji oraz zakres 8400–8500 wszystkim urządzeniom w sieci. Używaj jej w zaufanej sieci; przed udostępnieniem komputera w innej sieci ogranicz porty w `compose.yaml`.
 
 ## Adresy
@@ -116,3 +120,5 @@ Domyślna konfiguracja udostępnia port 8080, porty aplikacji oraz zakres 8400�
 | https://notes.nomad.localhost | notatki |
 
 Telefon lub inny komputer w tej samej sieci: `http://ADRES-KOMPUTERA:8080`.
+
+Chrome i Firefox same rozpoznają adresy `*.nomad.localhost`. W Safari i na innych urządzeniach dopisz do `/etc/hosts` linię wypisaną przez `make hosts` (dla innych urządzeń: `make hosts IP=ADRES-KOMPUTERA`) i zaufaj certyfikatowi z `make ca`.

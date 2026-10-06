@@ -2,11 +2,7 @@ variable "NOMAD_REF" {
   default = "v1.34.1"
 }
 
-variable "PLATFORM" {
-  default = "linux/arm64"
-}
-
-variable "BOX_IMAGE" {
+variable "NOMAD_BOX_IMAGE" {
   default = "nomad-box:latest"
 }
 
@@ -34,12 +30,7 @@ group "default" {
   targets = ["box"]
 }
 
-target "_arm" {
-  platforms = [PLATFORM]
-}
-
 target "admin" {
-  inherits = ["_arm"]
   context = "${UPSTREAM}#${NOMAD_REF}"
   args = {
     VERSION = trimprefix(NOMAD_REF, "v")
@@ -49,7 +40,6 @@ target "admin" {
 }
 
 target "disk-collector" {
-  inherits = ["_arm"]
   context = "${UPSTREAM}#${NOMAD_REF}:install/sidecar-disk-collector"
   tags = ["nomad-local/project-nomad-disk-collector:${NOMAD_REF}"]
   output = ["type=docker,dest=${IMAGES_DIR}/disk-collector.tar"]
@@ -60,14 +50,12 @@ target "vendor" {
   matrix = {
     item = keys(VENDOR_IMAGES)
   }
-  inherits = ["_arm"]
   dockerfile-inline = "FROM ${VENDOR_IMAGES[item]}"
   tags = [VENDOR_IMAGES[item]]
   output = ["type=docker,dest=${IMAGES_DIR}/${item}.tar"]
 }
 
 target "box" {
-  inherits = ["_arm"]
   context = "."
   dockerfile = "box/Dockerfile"
   contexts = {
@@ -81,6 +69,6 @@ target "box" {
     NOMAD_REDIS_IMAGE = VENDOR_IMAGES["redis"]
     NOMAD_DOZZLE_IMAGE = VENDOR_IMAGES["dozzle"]
   }
-  tags = [BOX_IMAGE]
+  tags = [NOMAD_BOX_IMAGE]
   output = ["type=docker"]
 }

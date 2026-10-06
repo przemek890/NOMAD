@@ -5,9 +5,7 @@ source /usr/local/lib/nomad-box/common.sh
 source "$SECRETS_FILE"
 
 service_status() {
-  docker exec -e MYSQL_PWD="$NOMAD_DB_PASSWORD" nomad_mysql \
-    mysql --user=nomad_user --database=nomad --batch --skip-column-names \
-    --execute="SELECT CONCAT(installed, ':', installation_status) FROM services WHERE service_name = '$1'"
+  db_query "SELECT CONCAT(installed, ':', installation_status) FROM services WHERE service_name = '$1'"
 }
 
 model_installed() {

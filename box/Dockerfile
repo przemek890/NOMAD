@@ -23,7 +23,7 @@ ENV NOMAD_VERSION=${NOMAD_VERSION} \
     NOMAD_REDIS_IMAGE=${NOMAD_REDIS_IMAGE} \
     NOMAD_DOZZLE_IMAGE=${NOMAD_DOZZLE_IMAGE} \
     NOMAD_HOME=/opt/project-nomad \
-    NOMAD_URL=http://localhost:8080 \
+    DOCKER_TLS_CERTDIR="" \
     NOMAD_HOST_OLLAMA=false \
     NOMAD_PRELOAD_SERVICES="nomad_kiwix_server nomad_ollama nomad_flatnotes nomad_cyberchef" \
     NOMAD_PRELOAD_MODELS="llama3.2:3b nomic-embed-text:v1.5" \
@@ -37,7 +37,7 @@ COPY box/lib/ /usr/local/lib/nomad-box/
 COPY --chmod=0755 box/bin/ /usr/local/bin/
 
 VOLUME ["/opt/project-nomad"]
-EXPOSE 8080 8090 8100 8200 8310 9999
+EXPOSE 8080 8090 8100 8200 8310 8400-8500 9999
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10m --retries=3 \
   CMD curl -fsS http://localhost:8080/api/health || exit 1

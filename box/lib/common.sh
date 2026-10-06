@@ -5,6 +5,9 @@ readonly API_URL=http://localhost:8080/api
 readonly HOST_OLLAMA_PORT=11435
 readonly HOST_OLLAMA_URL="http://host.docker.internal:${HOST_OLLAMA_PORT}"
 
+: "${NOMAD_URL:=${NOMAD_DOMAIN:+https://${NOMAD_DOMAIN}}}"
+export NOMAD_URL=${NOMAD_URL:-http://localhost:8080}
+
 log() {
   printf '\033[1;32m[nomad-box]\033[0m %s\n' "$*"
 }
@@ -40,4 +43,9 @@ api() {
 
 json() {
   jq -cn "$@"
+}
+
+db_query() {
+  docker exec -e MYSQL_PWD="$NOMAD_DB_PASSWORD" nomad_mysql \
+    mysql --user=nomad_user --database=nomad --batch --skip-column-names --execute="$1"
 }

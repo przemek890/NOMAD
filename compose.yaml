@@ -6,6 +6,7 @@ services:
     container_name: nomad-box
     hostname: nomad-box
     privileged: true
+    init: true
     restart: unless-stopped
     stop_grace_period: 90s
     env_file:
@@ -23,7 +24,7 @@ services:
       - 9999:9999
     volumes:
       - ${NOMAD_DATA_DIR:-./data}:/opt/project-nomad
-      - ${NOMAD_ENGINE_VOLUME:-nomad-engine}:/var/lib/docker
+      - nomad-engine:/var/lib/docker
 
   proxy:
     image: caddy:2.10-alpine
