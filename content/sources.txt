@@ -18,6 +18,14 @@ category agriculture-essential
 # Mapy krajów (kod ISO)
 map PL
 
-# Modele AI, pobierane do Ollamy wskazanej w NOMAD_OLLAMA_URL
-model gemma3:1b
+# Model do embeddingów, pobierany do Ollamy wskazanej w NOMAD_OLLAMA_URL.
+# Model do czatu pobierz sam w tej Ollamie, np. ollama pull gemma3:1b
 model nomic-embed-text:v1.5
+
+# Pliki ZIM indeksowane dla asystenta AI (nazwa bez daty i .zim albo pełna nazwa pliku).
+# Pozostałe ZIM-y są tylko do przeglądania: na CPU indeksowanie Wikipedii trwa kilka dni.
+# Dokumenty z content/knowledge są indeksowane zawsze.
+embed nhs.uk_en_medicines
+embed zimgit-medicine_en
+embed fas-military-medicine_en
+embed wwwnc.cdc.gov_en_all

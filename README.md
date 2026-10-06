@@ -92,7 +92,7 @@ Lista treści jest częścią repozytorium. Przy każdym starcie NOMAD instaluje
 
 | Plik | Co zawiera |
 |---|---|
-| `content/sources.txt` | usługi, pliki ZIM (Wikipedia, poradniki), mapy krajów i modele AI |
+| `content/sources.txt` | usługi, pliki ZIM (Wikipedia, poradniki), mapy krajów, model do embeddingów i lista ZIM-ów indeksowanych dla AI |
 | `content/knowledge/` | Twoje dokumenty (PDF, DOCX, EPUB, TXT, MD, obrazy), które trafiają do bazy wiedzy asystenta AI |
 
 Domyślnie to około 20 GB: polska Wikipedia bez obrazków (8 GB), kolekcje NOMAD *Medicine – Comprehensive* (7 GB), *DIY – Standard* (2,3 GB) i *Agriculture – Essential* oraz mapa Polski (3 GB). Pliki ZIM wyszukasz w [katalogu Kiwix](https://library.kiwix.org); adres bez daty, np. `https://download.kiwix.org/zim/wikipedia/wikipedia_pl_all_nopic`, oznacza zawsze najnowszą wersję. Po zmianie listy uruchom `make preload` albo `make restart`.
@@ -103,9 +103,14 @@ Pobieranie trwa w tle; przed odłączeniem internetu sprawdź w panelu, czy się
 
 ## Asystent AI
 
-NOMAD korzysta z Ollamy uruchomionej na tym samym komputerze pod adresem z `NOMAD_OLLAMA_URL` w `.env` (domyślnie `http://localhost:11434`). Zainstaluj ją z [ollama.com](https://ollama.com) i uruchom przed `make`. Gdy pod tym adresem nic nie odpowiada, NOMAD sam instaluje Ollamę w kontenerze. Modele z `content/sources.txt` (`gemma3:1b`, `nomic-embed-text`) pobiorą się automatycznie. `gemma3:1b` potrzebuje ok. 1,5 GB RAM, więc cały zestaw działa na komputerze z 4 GB RAM; na mocniejszym sprzęcie możesz wpisać większy model, np. `llama3.2:3b`. Na Macu Ollama poza kontenerem korzysta z GPU, więc odpowiada kilka razy szybciej.
+Do czatu NOMAD korzysta z Ollamy uruchomionej na tym samym komputerze pod adresem z `NOMAD_OLLAMA_URL` w `.env` (domyślnie `http://localhost:11434`). Zainstaluj ją z [ollama.com](https://ollama.com), pobierz model do czatu, np. `ollama pull gemma3:1b` (ok. 1,5 GB RAM, wystarczy komputer z 4 GB RAM) albo większy `llama3.2:3b`, i uruchom ją przed `make`. Na Macu Ollama poza kontenerem korzysta z GPU, więc odpowiada kilka razy szybciej. Gdy pod tym adresem nic nie odpowiada, NOMAD sam instaluje Ollamę w kontenerze; model do czatu pobierzesz wtedy w panelu: Settings → AI Assistant.
 
 Ollama na innym komputerze: ustaw jego adres, np. `NOMAD_OLLAMA_URL=http://192.168.1.20:11434`, a na tamtym komputerze uruchom Ollamę z `OLLAMA_HOST=0.0.0.0`. Na Linuksie i Raspberry Pi `OLLAMA_HOST=0.0.0.0` jest potrzebne także dla Ollamy na tym samym komputerze.
+
+### Baza wiedzy
+
+Asystent odpowiada na podstawie plików zindeksowanych modelem `nomic-embed-text`, który pobiera się automatycznie. Indeksowane są tylko dokumenty z `content/knowledge/` oraz pliki ZIM z liniami `embed` w `content/sources.txt`; domyślnie to kilka małych zbiorów medycznych. NOMAD sam zindeksowałby każdy pobrany ZIM, ale na procesorze bez GPU liczy około 3 fragmentów na sekundę, więc polska Wikipedia zajęłaby kilka dni. Dlatego `make` wyłącza indeksowanie automatyczne. Pliki z listy `embed`, które jeszcze się pobierają, zostaną zindeksowane po pobraniu. Postęp widać w czacie pod przyciskiem Knowledge Base, gdzie możesz też ręcznie zindeksować dowolny plik.
+
 ## Dane i sieć
 
 Dane aplikacji są w `data/`, a obrazy wewnętrznego Dockera w wolumenie `nomad-engine`. `make down` zatrzymuje usługi i zachowuje dane. `make clean` usuwa wolumen silnika; przy następnym starcie obrazy zostaną ponownie wczytane.

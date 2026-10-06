@@ -9,6 +9,10 @@ readonly KNOWLEDGE_DIR=/opt/nomad-box/content/knowledge
 readonly ZIM_DIR="${NOMAD_HOME}/storage/zim"
 readonly MAPS_DIR="${NOMAD_HOME}/storage/maps"
 readonly KB_DIR="${NOMAD_HOME}/storage/kb_uploads"
+# Te same katalogi widziane z kontenera nomad_admin (ścieżki źródeł w bazie wiedzy AI)
+readonly ADMIN_ZIM_DIR=/app/storage/zim
+readonly ADMIN_KB_DIR=/app/storage/kb_uploads
+readonly EMBED_LOCK=/run/nomad-embed.lock
 
 items() {
   awk -v kind="$1" '$1 == kind { print $2 }' "$SOURCES"
@@ -22,8 +26,21 @@ service_status() {
   db_query "SELECT CONCAT(installed, ':', installation_status) FROM services WHERE service_name = '$1'"
 }
 
+# Pytamy Ollamę bezpośrednio, bo API NOMAD ukrywa modele do embeddingów.
+ollama_models() {
+  local url
+  url=$(api GET '/system/settings?key=ai.remoteOllamaUrl' | jq -r '.value // empty')
+  if [[ -z $url ]]; then
+    docker exec nomad_ollama ollama list | awk 'NR > 1 { print $1 }'
+    return
+  fi
+  [[ $url == "$OLLAMA_RELAY_URL" ]] && url="http://localhost:${OLLAMA_RELAY_PORT}"
+  curl -fsS "${url%/}/api/tags" | jq -r '.models[].name'
+}
+
 model_installed() {
-  api GET /ollama/installed-models | jq -e --arg model "$1" 'any(.[]; .name == $model or .name == "\($model):latest")'
+  local models
+  models=$(ollama_models) && grep -qxF -e "$1" -e "$1:latest" <<<"$models"
 }
 
 await_service() {
@@ -102,22 +119,81 @@ add_model() {
 }
 
 sync_knowledge() {
-  local file target added=0
+  local file rel
   while IFS= read -r -d '' file; do
-    target="${KB_DIR}/${file#"$KNOWLEDGE_DIR"/}"
-    [[ -e $target ]] && continue
-    mkdir -p "${target%/*}"
-    cp "$file" "$target"
-    added=1
+    rel=${file#"$KNOWLEDGE_DIR"/}
+    if [[ ! -e ${KB_DIR}/${rel} ]]; then
+      mkdir -p "$(dirname "${KB_DIR}/${rel}")"
+      cp "$file" "${KB_DIR}/${rel}"
+    fi
+    embed "${ADMIN_KB_DIR}/${rel}"
   done < <(find "$KNOWLEDGE_DIR" -type f ! -name '.*' -print0)
-  ((added)) || return 0
-  log "Dodawanie dokumentów z content/knowledge do bazy wiedzy AI"
-  api POST /rag/sync >/dev/null
+}
+
+# Embeddingi liczą się tylko dla plików z content/sources.txt i content/knowledge.
+# Domyślnie NOMAD indeksuje każdy pobrany ZIM, co na CPU trwa dniami.
+manual_ingest() {
+  api PATCH /system/settings --data '{"key": "rag.defaultIngestPolicy", "value": "Manual"}' >/dev/null
+}
+
+rag_state() {
+  api GET /rag/files | jq -r --arg s "$1" '[.files[] | select(.source == $s) | .state] | first // "new"'
+}
+
+embed() {
+  local source=$1 state code
+  state=$(rag_state "$source") || return 1
+  case $state in
+    indexed) return 0 ;;
+    browse_only) return 0 ;;
+    failed | stalled)
+      log "✗ Indeksowanie ${source##*/} nie powiodło się; ponów w czacie: Knowledge Base"
+      return 0
+      ;;
+  esac
+  code=$(curl -sS -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' \
+    "${API_URL}/rag/files/embed" --data "$(json --arg s "$source" '{source: $s}')")
+  case $code in
+    202) log "Indeksowanie dla AI w tle: ${source##*/}" ;;
+    409) ;;
+    *) log "✗ Nie udało się zlecić indeksowania ${source##*/} (HTTP ${code})" ;;
+  esac
+}
+
+planned_zim() {
+  local file
+  for file in "${ZIM_DIR}/${1}" "${ZIM_DIR}/${1}"_[0-9][0-9][0-9][0-9]-[0-9][0-9].zim; do
+    [[ $file == *.zim && -f $file ]] && { printf '%s\n' "${ADMIN_ZIM_DIR}/${file##*/}"; return; }
+  done
+  return 1
+}
+
+# Pliki ZIM pobierają się w tle, więc czekamy na nie do 24 h.
+embed_planned() {
+  local item source deadline=$((SECONDS + 86400))
+  local -a waiting
+  local -A queued=()
+  while :; do
+    waiting=()
+    for item in $(items embed); do
+      [[ -n ${queued[$item]:-} ]] && continue
+      if source=$(planned_zim "$item") && embed "$source"; then
+        queued[$item]=1
+      else
+        waiting+=("$item")
+      fi
+    done
+    ((${#waiting[@]})) || return 0
+    ((SECONDS < deadline)) || break
+    sleep 60
+  done
+  log "✗ Brak pliku ZIM do indeksowania: ${waiting[*]}"
 }
 
 main() {
   wait_for 600 api GET /health || fail "Command Center nie działa. Uruchom najpierw: make up"
   [[ -f $SOURCES ]] || fail "Brak ${SOURCES}"
+  manual_ingest || log "✗ Nie udało się wyłączyć automatycznego indeksowania; NOMAD zindeksuje wszystkie pliki ZIM"
   local kind item
   for kind in service zim category map model; do
     for item in $(items "$kind"); do
@@ -126,6 +202,10 @@ main() {
   done
   [[ -d $KNOWLEDGE_DIR ]] && { (sync_knowledge) || log "✗ Nie udało się zsynchronizować bazy wiedzy"; }
   api POST /zim/rescan-library >/dev/null 2>&1 || true
+  (
+    flock -n 9 || exit 0
+    embed_planned
+  ) 9>"$EMBED_LOCK" >/proc/1/fd/1 2>&1 &
   log "Treści z content/sources.txt są zainstalowane lub pobierają się w tle: ${NOMAD_URL}"
 }
 
