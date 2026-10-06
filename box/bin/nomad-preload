@@ -119,14 +119,12 @@ add_model() {
 }
 
 sync_knowledge() {
-  local file rel
+  local file target
   while IFS= read -r -d '' file; do
-    rel=${file#"$KNOWLEDGE_DIR"/}
-    if [[ ! -e ${KB_DIR}/${rel} ]]; then
-      mkdir -p "$(dirname "${KB_DIR}/${rel}")"
-      cp "$file" "${KB_DIR}/${rel}"
-    fi
-    embed "${ADMIN_KB_DIR}/${rel}"
+    target="${KB_DIR}/${file#"$KNOWLEDGE_DIR"/}"
+    [[ -e $target ]] && continue
+    mkdir -p "${target%/*}"
+    cp "$file" "$target"
   done < <(find "$KNOWLEDGE_DIR" -type f ! -name '.*' -print0)
 }
 
@@ -140,24 +138,10 @@ rag_state() {
   api GET /rag/files | jq -r --arg s "$1" '[.files[] | select(.source == $s) | .state] | first // "new"'
 }
 
-embed() {
-  local source=$1 state code
-  state=$(rag_state "$source") || return 1
-  case $state in
-    indexed) return 0 ;;
-    browse_only) return 0 ;;
-    failed | stalled)
-      log "✗ Indeksowanie ${source##*/} nie powiodło się; ponów w czacie: Knowledge Base"
-      return 0
-      ;;
-  esac
-  code=$(curl -sS -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' \
-    "${API_URL}/rag/files/embed" --data "$(json --arg s "$source" '{source: $s}')")
-  case $code in
-    202) log "Indeksowanie dla AI w tle: ${source##*/}" ;;
-    409) ;;
-    *) log "✗ Nie udało się zlecić indeksowania ${source##*/} (HTTP ${code})" ;;
-  esac
+# force usuwa fragmenty z przerwanego wcześniej indeksowania; 409 znaczy, że plik jest już w kolejce
+embed_request() {
+  curl -sS -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' \
+    "${API_URL}/rag/files/embed" --data "$(json --arg s "$1" '{source: $s, force: true}')"
 }
 
 planned_zim() {
@@ -168,26 +152,56 @@ planned_zim() {
   return 1
 }
 
-# Pliki ZIM pobierają się w tle, więc czekamy na nie do 24 h.
+# Pliki do zindeksowania jako ścieżki w nomad_admin; ZIM, który jeszcze się pobiera, jako "?nazwa"
+planned_sources() {
+  local item file
+  for item in $(items embed); do
+    planned_zim "$item" || printf '?%s\n' "$item"
+  done
+  [[ -d $KNOWLEDGE_DIR ]] || return 0
+  find "$KNOWLEDGE_DIR" -type f ! -name '.*' | while IFS= read -r file; do
+    printf '%s\n' "${ADMIN_KB_DIR}/${file#"$KNOWLEDGE_DIR"/}"
+  done
+}
+
+# Działa w tle, dopóki wszystkie zaplanowane pliki nie są zindeksowane. Zadanie przerwane
+# restartem NOMAD po 30 min kończy się błędem bez zmiany stanu pliku; wtedy indeksujemy go od nowa.
 embed_planned() {
-  local item source deadline=$((SECONDS + 86400))
-  local -a waiting
-  local -A queued=()
+  local source state code pending
+  local -A tries=() noted=()
   while :; do
-    waiting=()
-    for item in $(items embed); do
-      [[ -n ${queued[$item]:-} ]] && continue
-      if source=$(planned_zim "$item") && embed "$source"; then
-        queued[$item]=1
-      else
-        waiting+=("$item")
+    pending=0
+    while IFS= read -r source; do
+      if [[ $source == \?* ]]; then
+        [[ -n ${noted[$source]:-} ]] || log "Plik ${source#\?} zostanie zindeksowany po pobraniu"
+        noted[$source]=1
+        pending=1
+        continue
       fi
-    done
-    ((${#waiting[@]})) || return 0
-    ((SECONDS < deadline)) || break
+      state=$(rag_state "$source") || { pending=1; continue; }
+      [[ $state == indexed || $state == browse_only ]] && continue
+      if ((${tries[$source]:-0} >= 3)); then
+        [[ -n ${noted[$source]:-} ]] || log "✗ Indeksowanie ${source##*/} nie powiodło się 3 razy; szczegóły: make logs-admin"
+        noted[$source]=1
+        continue
+      fi
+      pending=1
+      code=$(embed_request "$source") || code=000
+      case $code in
+        202)
+          tries[$source]=$((${tries[$source]:-0} + 1))
+          log "Indeksowanie dla AI w tle: ${source##*/}"
+          ;;
+        409) ;;
+        *)
+          tries[$source]=3
+          log "✗ Nie udało się zlecić indeksowania ${source##*/} (HTTP ${code})"
+          ;;
+      esac
+    done < <(planned_sources)
+    ((pending)) || return 0
     sleep 60
   done
-  log "✗ Brak pliku ZIM do indeksowania: ${waiting[*]}"
 }
 
 main() {
