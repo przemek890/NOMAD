@@ -103,10 +103,9 @@ Pobieranie trwa w tle; przed odłączeniem internetu sprawdź w panelu, czy się
 
 ## Asystent AI
 
-NOMAD korzysta z Ollamy uruchomionej na tym samym komputerze pod adresem z `NOMAD_OLLAMA_URL` w `.env` (domyślnie `http://localhost:11434`). Zainstaluj ją z [ollama.com](https://ollama.com) i uruchom przed `make`. Modele z `content/sources.txt` (`llama3.2:3b`, `nomic-embed-text`) pobiorą się do niej automatycznie. Na Macu Ollama poza kontenerem korzysta z GPU, więc odpowiada kilka razy szybciej.
+NOMAD korzysta z Ollamy uruchomionej na tym samym komputerze pod adresem z `NOMAD_OLLAMA_URL` w `.env` (domyślnie `http://localhost:11434`). Zainstaluj ją z [ollama.com](https://ollama.com) i uruchom przed `make`. Gdy pod tym adresem nic nie odpowiada, NOMAD sam instaluje Ollamę w kontenerze. Modele z `content/sources.txt` (`gemma3:1b`, `nomic-embed-text`) pobiorą się automatycznie. `gemma3:1b` potrzebuje ok. 1,5 GB RAM, więc cały zestaw działa na komputerze z 4 GB RAM; na mocniejszym sprzęcie możesz wpisać większy model, np. `llama3.2:3b`. Na Macu Ollama poza kontenerem korzysta z GPU, więc odpowiada kilka razy szybciej.
 
-Ollama na innym komputerze: ustaw jego adres, np. `NOMAD_OLLAMA_URL=http://192.168.1.20:11434`, a na tamtym komputerze uruchom Ollamę z `OLLAMA_HOST=0.0.0.0`. Na Linuksie i Raspberry Pi `OLLAMA_HOST=0.0.0.0` jest potrzebne także dla Ollamy na tym samym komputerze. Pusta wartość `NOMAD_OLLAMA_URL` instaluje Ollamę w kontenerze NOMAD.
-
+Ollama na innym komputerze: ustaw jego adres, np. `NOMAD_OLLAMA_URL=http://192.168.1.20:11434`, a na tamtym komputerze uruchom Ollamę z `OLLAMA_HOST=0.0.0.0`. Na Linuksie i Raspberry Pi `OLLAMA_HOST=0.0.0.0` jest potrzebne także dla Ollamy na tym samym komputerze.
 ## Dane i sieć
 
 Dane aplikacji są w `data/`, a obrazy wewnętrznego Dockera w wolumenie `nomad-engine`. `make down` zatrzymuje usługi i zachowuje dane. `make clean` usuwa wolumen silnika; przy następnym starcie obrazy zostaną ponownie wczytane.

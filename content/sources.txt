@@ -19,5 +19,5 @@ category agriculture-essential
 map PL
 
 # Modele AI, pobierane do Ollamy wskazanej w NOMAD_OLLAMA_URL
-model llama3.2:3b
+model gemma3:1b
 model nomic-embed-text:v1.5

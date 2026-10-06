@@ -52,11 +52,15 @@ install_service() {
 
 add_service() {
   if [[ $1 == nomad_ollama && -n $NOMAD_OLLAMA_URL ]]; then
-    api POST /ollama/configure-remote --data "$(json --arg u "$OLLAMA_RELAY_URL" '{remoteUrl: $u}')" >/dev/null \
-      || fail "LLM pod ${NOMAD_OLLAMA_URL} nie odpowiada. Uruchom Ollamę albo popraw NOMAD_OLLAMA_URL w .env"
-  else
-    install_service "$1"
+    if curl -fsS -m 5 "http://localhost:${OLLAMA_RELAY_PORT}/api/version" >/dev/null 2>&1; then
+      api POST /ollama/configure-remote --data "$(json --arg u "$OLLAMA_RELAY_URL" '{remoteUrl: $u}')" >/dev/null \
+        || fail "NOMAD nie przyjął adresu LLM ${NOMAD_OLLAMA_URL}"
+      log "✓ LLM: ${NOMAD_OLLAMA_URL}"
+      return
+    fi
+    log "LLM pod ${NOMAD_OLLAMA_URL} nie odpowiada; instaluję Ollamę w kontenerze NOMAD"
   fi
+  install_service "$1"
 }
 
 add_zim() {
