@@ -2,7 +2,8 @@
 # on the Ethernet cable between this PC (running the model) and the mini PC (running NOMAD).
 # Asks for Administrator rights by itself.
 #
-#   ./nomad start            Ollama, address 10.77.0.1 with DHCP and internet for the mini PC, bridge to Ollama
+#   ./nomad start            installs and starts Ollama, downloads the models once, address 10.77.0.1
+#                            with DHCP and internet for the mini PC, bridge to Ollama
 #   ./nomad stop             undo the network and the bridge
 #   ./nomad status           network, mini PC address, bridge
 #   ./nomad test [address]   check a running NOMAD (needs bash: Git for Windows or WSL)
@@ -28,6 +29,18 @@ $IcsParams = 'HKLM:\SYSTEM\CurrentControlSet\Services\SharedAccess\Parameters'
 # Without this Windows may drop Internet Connection Sharing after a restart
 $IcsPersist = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\SharedAccess'
 $FirewallRule = 'NOMAD LLM bridge'
+# The model NOMAD indexes the knowledge base with; it must be the same everywhere
+$EmbedModel = 'nomic-embed-text:v1.5'
+
+# Settings for this computer (network/local.env, KEY=value lines), e.g. CHAT_MODEL
+$LocalEnv = @{}
+$LocalEnvFile = Join-Path $PSScriptRoot 'local.env'
+if (Test-Path $LocalEnvFile) {
+  foreach ($line in Get-Content $LocalEnvFile) {
+    if ($line -match '^\s*([A-Z_]+)=(.*)$') { $LocalEnv[$Matches[1]] = $Matches[2].Trim('"') }
+  }
+}
+$ChatModel = if ($LocalEnv.CHAT_MODEL) { $LocalEnv.CHAT_MODEL } else { 'qwen3:8b' }
 
 function Say($Text) { Write-Host "[link] $Text" -ForegroundColor Green }
 function Die($Text) { Write-Host "[link] $Text" -ForegroundColor Red; exit 1 }
@@ -127,29 +140,39 @@ function Test-Ollama {
   try { Invoke-RestMethod "http://127.0.0.1:$Port/api/version" -TimeoutSec 3 | Out-Null; $true } catch { $false }
 }
 
-# Starts the Ollama app (installed from ollama.com) when it is not running
+# Installs (winget) and starts the Ollama app when it is not running
 function Start-Ollama {
   if (Test-Ollama) { return }
   $app = Join-Path $env:LOCALAPPDATA 'Programs\Ollama\ollama app.exe'
-  if (Test-Path $app) {
-    Say 'Starting Ollama'
-    Start-Process $app
-  } elseif (Get-Command ollama -ErrorAction SilentlyContinue) {
-    Say 'Starting ollama serve'
-    Start-Process ollama -ArgumentList serve -WindowStyle Hidden
-  } else {
-    Die 'Ollama is not installed. Install it from https://ollama.com and run this again'
+  if (-not (Test-Path $app) -and -not (Get-Command ollama -ErrorAction SilentlyContinue)) {
+    if (-not (Get-Command winget -ErrorAction SilentlyContinue)) { Die 'Install Ollama from https://ollama.com and run this again' }
+    Say 'Installing Ollama'
+    winget install --id Ollama.Ollama --exact --silent --accept-source-agreements --accept-package-agreements | Out-Null
   }
-  foreach ($i in 1..30) { if (Test-Ollama) { return }; Start-Sleep 1 }
+  Say 'Starting Ollama'
+  if (Test-Path $app) { Start-Process $app } else { Start-Process ollama -ArgumentList serve -WindowStyle Hidden }
+  foreach ($i in 1..60) { if (Test-Ollama) { return }; Start-Sleep 1 }
   Die "Ollama did not start at 127.0.0.1:$Port"
+}
+
+# Downloaded by this computer's Ollama, once; NOMAD itself never downloads models
+function Get-Models {
+  $have = (Invoke-RestMethod "http://127.0.0.1:$Port/api/tags").models.name
+  foreach ($model in $ChatModel, $EmbedModel) {
+    if ($have -contains $model -or $have -contains "${model}:latest") { continue }
+    Say "Downloading the model $model (once, a few GB)"
+    Invoke-RestMethod "http://127.0.0.1:$Port/api/pull" -Method Post -TimeoutSec 7200 `
+      -Body (@{ model = $model; stream = $false } | ConvertTo-Json) | Out-Null
+  }
 }
 
 function Start-All {
   Start-Ollama
+  Get-Models
   Up
   Start-Bridge
   Status
-  Say 'NOMAD: http://nomad.local:8080'
+  Say "Chat model: $ChatModel. NOMAD: http://nomad.local:8080"
 }
 
 function Stop-All {

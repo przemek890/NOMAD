@@ -20,34 +20,32 @@ Encyklopedia, mapy i asystent AI działające bez internetu ([Project NOMAD](htt
 ## Model AI na komputerze, NOMAD na mini PC
 
 Model AI działa na Twoim komputerze (macOS, Windows lub Linux), a NOMAD na mini PC połączonym z nim **tylko kablem Ethernet** (bez routera).
-Komputer dostaje na kablu adres `10.77.0.1`, nadaje adres mini PC i udostępnia mu internet.
-NOMAD otwierasz w przeglądarce na komputerze: **http://nomad.local:8080**.
+
+Jak to działa:
+- **Mini PC** po włączeniu sam uruchamia NOMAD (ok. 2–3 min), także po zaniku prądu. Nic na nim nie robisz.
+- **Komputer** po `./nomad start` dostaje na kablu adres `10.77.0.1`, nadaje adres mini PC, udostępnia mu internet (jeśli jest)
+  i swój model AI. To jedyne, co robisz – po każdym włączeniu komputera albo na nowym komputerze.
+- **NOMAD** otwierasz w przeglądarce na komputerze pod adresem mini PC: **http://nomad.local:8080** (to nie `localhost`, bo NOMAD działa na mini PC).
 
 ### Pierwszy raz
 
-1. **Na komputerze** zainstaluj [Ollama](https://ollama.com) i pobierz model do czatu oraz model do wyszukiwania:
-
-   ```bash
-   ollama pull qwen3:8b
-   ollama pull nomic-embed-text:v1.5
-   ```
-
-   macOS: zainstaluj też Caddy: `brew install caddy` ([Homebrew](https://brew.sh)). Linux: `sudo apt install caddy`.
-2. Połącz mini PC z komputerem kablem Ethernet.
-3. **Na komputerze** otwórz Terminal (macOS, Linux) albo PowerShell (Windows) w folderze projektu i wpisz:
+1. **Na komputerze** pobierz projekt (**Code > Download ZIP**, rozpakuj) i połącz komputer z mini PC kablem Ethernet.
+2. **Na komputerze** otwórz Terminal (macOS, Linux) albo PowerShell (Windows) w folderze projektu i wpisz:
 
    ```bash
    ./nomad start
    ```
 
-   To samo polecenie na każdym systemie. macOS i Linux zapytają o hasło do komputera, Windows o zgodę administratora
-   (Windows musi mieć internet, np. Wi‑Fi). Na Windows możesz też kliknąć dwa razy `nomad.cmd`.
-   Na końcu zobaczysz adres mini PC, np. `10.77.0.11`.
-4. **Na komputerze** skopiuj projekt na mini PC i zainstaluj go tam (Terminal na macOS / Linux, PowerShell na Windows,
-   w folderze, w którym leży folder `NOMAD`; `użytkownik` to Twój login na mini PC, adres z kroku 3):
+   To jedno polecenie robi wszystko: instaluje i uruchamia Ollamę, pobiera model czatu (`qwen3:8b`) i model
+   wyszukiwania (raz, ok. 5 GB), stawia sieć na kablu i udostępnia model mini PC. Na końcu pokazuje adres mini PC, np. `10.77.0.11`.
+   - macOS: potrzebny [Homebrew](https://brew.sh); zapyta o hasło do komputera.
+   - Windows: potrzebny internet (np. Wi‑Fi); potwierdź okno administratora. Możesz też kliknąć dwa razy `nomad.cmd`.
+   - Inny model czatu: wpisz go w `network/local.env` (wzór: `network/local.env.example`), np. `CHAT_MODEL=qwen3:14b`.
+3. **Mini PC** (tylko raz; jeśli NOMAD już na nim jest, pomiń): skopiuj projekt i zainstaluj
+   (w folderze, w którym leży folder projektu, np. `NOMAD-main` z ZIP-a; `użytkownik` to login na mini PC, adres z kroku 2):
 
    ```bash
-   scp -r NOMAD użytkownik@10.77.0.11:
+   scp -r NOMAD-main użytkownik@10.77.0.11:NOMAD
    ssh użytkownik@10.77.0.11
    ```
 
@@ -55,7 +53,9 @@ NOMAD otwierasz w przeglądarce na komputerze: **http://nomad.local:8080**.
    cd NOMAD && NOMAD_LLM_URL=http://10.77.0.1:11434 NOMAD_EMBED_URL=http://10.77.0.1:11434 bash install.sh
    ```
 
-5. **Na komputerze** otwórz **http://nomad.local:8080** (albo `http://<adres mini PC>:8080`).
+4. Otwórz **http://nomad.local:8080** (albo `http://<adres mini PC>:8080`).
+
+**Nowy albo wyczyszczony komputer** (Mac, Windows, Linux): kroki 1, 2 i 4. Mini PC zostaje bez zmian.
 
 ### Na co dzień
 
@@ -63,7 +63,7 @@ NOMAD otwierasz w przeglądarce na komputerze: **http://nomad.local:8080**.
 |---|---|
 | Uruchomiłeś ponownie komputer | `./nomad start` |
 | Uruchomiłeś ponownie mini PC | nic, NOMAD wstaje sam po kilku minutach |
-| Przepinasz mini PC do innego komputera (np. z Maca do Windowsa) | na nowym komputerze: krok 1 (te same dwa modele) i krok 3; mini PC zostaje bez zmian |
+| Przepinasz mini PC do innego komputera (np. z Maca do Windowsa) | na nowym komputerze `./nomad start`; mini PC zostaje bez zmian |
 | Chcesz używać NOMAD | otwórz http://nomad.local:8080 |
 | Chcesz sprawdzić, czy wszystko działa | `./nomad test` |
 
@@ -80,7 +80,7 @@ Działa tak samo na macOS, Linux i Windows (PowerShell):
 
 | Polecenie | Co robi |
 |---|---|
-| `./nomad start` | uruchamia model, sieć na kablu i udostępnia model mini PC |
+| `./nomad start` | przygotowuje komputer (Ollama, modele), stawia sieć na kablu i udostępnia model mini PC |
 | `./nomad status` | pokazuje sieć, adres mini PC i model |
 | `./nomad test` | sprawdza, czy NOMAD działa (na Windows potrzebny [Git](https://git-scm.com)) |
 | `./nomad report` | benchmarki systemu i AI, zapisuje je w `content/notes/Benchmarks.md` (~10 min) |
