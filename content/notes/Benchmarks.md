@@ -62,38 +62,38 @@ Potem pokaż, że działa bez internetu i bez AI:
 
 ## Ostatnie wyniki
 
-Zmierzone 2026-10-08 23:34 na `nomad.local`, internet: jest. Polecenie: `./nomad report`.
+Zmierzone 2026-10-08 23:45 na `nomad.local`, internet: jest. Polecenie: `./nomad report`.
 
-Sprzęt: Embedded G-Series GX-420GI Radeon R7E, 4 rdzenie, RAM 3.5 GB (zajęte 2.3 GB), obciążenie CPU 13%.
+Sprzęt: Embedded G-Series GX-420GI Radeon R7E, 4 rdzenie, RAM 3.5 GB (zajęte 2.3 GB), obciążenie CPU 20%.
 
 ### System (benchmark NOMAD)
 
 | NOMAD score | CPU 1 wątek | CPU wszystkie wątki | RAM | Dysk odczyt | Dysk zapis |
 |---|---|---|---|---|---|
-| 20.7 | 356.97 zdarzeń/s | 1099.61 zdarzeń/s | 1.8 mln op/s | 224.37 MB/s | 123.88 MB/s |
+| 20.85 | 356.87 zdarzeń/s | 1099.4 zdarzeń/s | 1.8 mln op/s | 223.99 MB/s | 123.82 MB/s |
 
 ### AI: szybkość modelu
 
 | Model | Tokeny/s | Czas do pierwszego tokenu | Ładowanie modelu |
 |---|---|---|---|
-| local-qwen:latest | 9.8 | 2576 ms | 2.2 s |
+| local-qwen:latest | 9.7 | 7127 ms | 6.7 s |
 
 ### AI: poprawność odpowiedzi (czat z bazą wiedzy, model `local-qwen:latest`)
 
 | Pytanie | Czas | Poprawna | Odpowiedź |
 |---|---|---|---|
-| According to the NHS, what should I do if I miss a dose of warfarin? | 18 s | ✅ | If you miss a dose of warfarin, follow this guidance:  - **Take it as soon as you remember** — unless it's already the next day. - **If you don't remember unt… |
-| What is the first aid for a snake bite in the field? | 62 s | ✅ | ## Snake Bite First Aid in the Field  Based on the *Zoonotic Exposures: Bites, Stings, Scratches* guide and the **CDC Yellow Book 2024 (Snakes)** entry, field f… |
-| How do you recognise and treat heat stroke? | 51 s | ✅ | ## Recognising Heat Stroke  Heat stroke is a **medical emergency**. The classic signs (as per the Travelers' Health guide) are:  - **Body temperature ≥ 40 °C… |
-| Co zrobić, gdy pominę dawkę warfaryny? Odpowiedz po polsku. | 75 s | ✅ | ## Co zrobić, gdy pominięto dawkę warfaryny?  Zgodnie z poradnikiem NHS z bazy wiedzy (*„How and when to take warfarin – NHS – If you forget to take wa… |
-| Jaka jest stolica Polski i jaka rzeka przez nią płynie? | 28 s | ✅ | Stolicą Polski jest **Warszawa**, a rzeką przez nią płynącą jest **Wisła**.  ## Uzasadnienie - Z artykułu Wikipedii „**Stolica Polski**" wynika, że f… |
-| Kto jest dyrektorem 1 LO w Tarnowie? Odpowiedz jednym zdaniem. | 33 s | ❌ | Nie mam w swoich offline'owych zasobach (Wikipedii ani bazie wiedzy) informacji o tym, kto jest dyrektorem I LO w Tarnowie.… |
+| According to the NHS, what should I do if I miss a dose of warfarin? | 20 s | ✅ | If you miss a dose of warfarin, here’s what to do:  - **Take it as soon as you remember.** - **If you don’t remember until the next day**, skip the missed d… |
+| What is the first aid for a snake bite in the field? | 62 s | ✅ | I'll look up the field first aid for snakebites in the knowledge base.  # First Aid for a Snake Bite in the Field  Based on the NOMAD knowledge base (CDC Yellow… |
+| How do you recognise and treat heat stroke? | 57 s | ✅ | ## Recognising Heat Stroke  Heat stroke is a **medical emergency**. It is typically marked by:  - **Core body temperature of 40°C (104°F) or higher** - **Cent… |
+| Co zrobić, gdy pominę dawkę warfaryny? Odpowiedz po polsku. | 85 s | ✅ | ## Co zrobić, gdy pominięta została dawka warfaryny?  Zgodnie z poradnikiem **NHS – „How and when to take warfarin / If you forget to take warfarin"**:  … |
+| Jaka jest stolica Polski i jaka rzeka przez nią płynie? | 32 s | ✅ | ## Stolica Polski  - **Stolica:** **Warszawa** — miasto stołeczne, położone na Mazowszu, w centralnej Polsce (wg artykułu Wikipedii *Warszawa*). - **Rzeka… |
+| Kto jest dyrektorem 1 LO w Tarnowie? Odpowiedz jednym zdaniem. | 24 s | ✅ | Dyrektorem I Liceum Ogólnokształcącego im. Kazimierza Brodzińskiego w Tarnowie jest **Małgorzata Dulęba-Szpala** (wg artykułu Wikipedii „I Liceum Ogól… |
 
 ### Wyszukiwanie w bazie wiedzy bez AI (Knowledge Search)
 
 | Pytanie | Czas | Najlepszy fragment | Dopasowanie |
 |---|---|---|---|
-| missed dose of warfarin | 0.5 s | Anticoagulant medicines - Dosage  - NHS - Warfarin | 82% |
+| missed dose of warfarin | 0.2 s | Anticoagulant medicines - Dosage  - NHS - Warfarin | 82% |
 | snake bite first aid | 0.2 s | Zoonotic Exposures: Bites, Stings, Scratches - Management | 75% |
 | heat stroke treatment | 0.3 s | Adventure Travel   CDC Yellow Book 2024 - HEAT STROKE | 73% |
 | water purification | 0.2 s | Mass Gatherings   CDC Yellow Book 2024 - Provide Education & Guidance to Travelers | 60% |

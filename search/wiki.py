@@ -14,6 +14,7 @@ import urllib.parse
 import urllib.request
 
 ARTICLES = 4
+LEAD_PASSAGES = 2
 PASSAGE_CHARS = 500
 CONTEXT_CHARS = 4000
 _book = {"name": None, "checked": 0.0}
@@ -123,10 +124,12 @@ def passages(kiwix, question, queries=(), limit=6):
         title, lines = article(kiwix, name, path)
         for index, text in enumerate(_passages(lines)):
             words = stems(text)
-            if not words & asked:
+            # The top of an article (lead and infobox, the first two passages) answers most
+            # "who/what/where" questions, so it counts even without words of the question
+            top = index < LEAD_PASSAGES
+            if not (top or words & asked):
                 continue
-            # The top of an article (lead and infobox) answers most "who/what/where" questions
-            score = 2 * len(words & asked) + len(words & terms) + (2 if index == 0 else 0) - rank
+            score = 2 * len(words & asked) + len(words & terms) + (3 if top else 0) - rank
             found.append({"title": title, "text": text, "score": score})
     found.sort(key=lambda passage: passage["score"], reverse=True)
     return found[:limit]
