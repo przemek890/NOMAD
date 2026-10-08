@@ -21,34 +21,53 @@ Offline encyclopedia, maps and AI assistant ([Project NOMAD](https://www.project
 
 ## AI chat on your computer, NOMAD on a mini PC
 
-The model runs on your computer (Ollama on `127.0.0.1:11434`), NOMAD runs on a mini PC connected
-to it with an Ethernet cable only. Your computer is `10.77.0.1` on the cable, gives the mini PC
-an address (DHCP) and shares its internet connection.
+The AI model runs on your computer (macOS, Windows or Linux, [Ollama](https://ollama.com)).
+NOMAD runs on a mini PC connected to your computer **only with an Ethernet cable** (no router).
+Your computer becomes `10.77.0.1` on the cable, gives the mini PC an address and shares its internet.
+You use NOMAD in the browser on your computer: **http://nomad.local:8080**.
 
-1. Connect the mini PC with an Ethernet cable (the mini PC uses DHCP, the default).
-2. Set up the cable network and make Ollama reachable on the cable only:
+### First time
 
-   | | macOS / Linux (Terminal) | Windows (Command Prompt or PowerShell) |
-   |---|---|---|
-   | network | `sudo network/link.sh up` | `network\link.cmd up` |
-   | model | `network/llm-bridge.sh start` | `network\link.cmd bridge-start` |
-   | mini PC address | `network/link.sh status` | `network\link.cmd status` |
-   | undo | `network/llm-bridge.sh stop`, `sudo network/link.sh down` | `network\link.cmd bridge-stop`, `network\link.cmd down` |
-
-   On Windows confirm the Administrator prompt; the result shows in the new window. Windows shares
-   an existing internet connection (e.g. Wi-Fi), so connect to one first.
-   On macOS run both again after every restart. `llm-bridge.sh` needs [Caddy](https://caddyserver.com/docs/install).
-
-3. Copy the project folder to the mini PC and run in it (a Windows mini PC: in the **Ubuntu** app, see Install):
+1. Install [Ollama](https://ollama.com) on your computer and download a model, e.g. `ollama pull qwen3:8b`.
+   macOS and Linux also need [Caddy](https://caddyserver.com/docs/install) (`brew install caddy`).
+2. Connect the mini PC to your computer with an Ethernet cable.
+3. Start everything on your computer:
+   - **macOS / Linux:** in Terminal, in the project folder: `network/start.sh` (asks for your password)
+   - **Windows:** double-click `network\start.cmd` and confirm the Administrator prompt.
+     Windows shares an existing internet connection, so connect to Wi-Fi first.
+4. Install NOMAD on the mini PC: copy the project folder there and run in it
+   (a Windows mini PC: in the **Ubuntu** app, see Install):
 
    ```bash
    NOMAD_LLM_URL=http://10.77.0.1:11434 bash install.sh
    ```
 
-4. Open **http://nomad.local:8080** (or `http://<mini PC address>:8080`).
+5. Open **http://nomad.local:8080** in the browser on your computer.
+   If the name does not work, use the mini PC address shown by `start` (e.g. `http://10.77.0.11:8080`).
 
-After a restart of the computer running the model, run `network/start.sh` (macOS, Linux): it starts
-Ollama if needed, the cable network and the bridge. The mini PC starts NOMAD by itself.
+### Every day
+
+| What happened | What to do |
+|---|---|
+| Your computer was restarted | macOS / Linux: `network/start.sh`, Windows: double-click `network\start.cmd` |
+| The mini PC was restarted | nothing, NOMAD starts by itself in a few minutes |
+| You want to use NOMAD | open http://nomad.local:8080 |
+
+Keep your computer on (not asleep) while you use NOMAD: the mini PC uses its model and internet.
+Wikipedia, maps and the other content work without internet.
+
+### Single steps
+
+| | macOS / Linux | Windows |
+|---|---|---|
+| everything (model, network, bridge) | `network/start.sh` | `network\start.cmd` |
+| cable network only | `sudo network/link.sh up` | `network\link.cmd up` |
+| model for the mini PC only | `network/llm-bridge.sh start` | `network\link.cmd bridge-start` |
+| status, mini PC address | `network/link.sh status` | `network\link.cmd status` |
+| undo | `network/llm-bridge.sh stop`, `sudo network/link.sh down` | `network\link.cmd bridge-stop`, `network\link.cmd down` |
+
+The model stays reachable only on the cable. On macOS and Linux the bridge passes only the chat
+endpoints (no downloading or deleting models); on Windows it forwards the whole Ollama API.
 
 ### A small mini PC (e.g. HP t630, 4 GB RAM)
 

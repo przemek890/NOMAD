@@ -2,6 +2,7 @@
 # this PC (running the model) and the mini PC (running NOMAD). Start it through link.cmd,
 # it asks for Administrator rights by itself:
 #
+#   network\start.cmd               # everything at once (after a restart too): Ollama, network, bridge
 #   network\link.cmd up             # address 10.77.0.1, DHCP and internet for the mini PC
 #   network\link.cmd bridge-start   # Ollama (127.0.0.1:11434) reachable on the cable only
 #   network\link.cmd status
@@ -11,7 +12,7 @@
 # Uses Internet Connection Sharing (needs a working internet adapter, e.g. Wi-Fi).
 # The bridge forwards the whole Ollama API (no endpoint filtering, unlike llm-bridge.sh).
 param(
-  [ValidateSet('up', 'down', 'status', 'bridge-start', 'bridge-stop')]
+  [ValidateSet('start', 'up', 'down', 'status', 'bridge-start', 'bridge-stop')]
   [string]$Action = 'status',
   [string]$Adapter = $env:NOMAD_LINK_IF
 )
@@ -97,7 +98,7 @@ function Down {
 function Start-Bridge {
   Assert-Admin
   if (-not (Get-NetIPAddress -IPAddress $LinkIp -ErrorAction SilentlyContinue)) { Die "No $LinkIp here. First: link.cmd up" }
-  try { Invoke-RestMethod "http://127.0.0.1:$Port/api/version" -TimeoutSec 3 | Out-Null } catch { Die "Ollama does not answer at 127.0.0.1:$Port. Start Ollama first" }
+  if (-not (Test-Ollama)) { Die "Ollama does not answer at 127.0.0.1:$Port. Start Ollama first" }
   Set-Service iphlpsvc -StartupType Automatic
   Start-Service iphlpsvc
   netsh interface portproxy delete v4tov4 listenaddress=$LinkIp listenport=$Port 2>$null | Out-Null
@@ -113,6 +114,35 @@ function Stop-Bridge {
   netsh interface portproxy delete v4tov4 listenaddress=$LinkIp listenport=$Port 2>$null | Out-Null
   Remove-NetFirewallRule -DisplayName $FirewallRule -ErrorAction SilentlyContinue
   Say 'Bridge stopped'
+}
+
+function Test-Ollama {
+  try { Invoke-RestMethod "http://127.0.0.1:$Port/api/version" -TimeoutSec 3 | Out-Null; $true } catch { $false }
+}
+
+# Starts the Ollama app (installed from ollama.com) when it is not running
+function Start-Ollama {
+  if (Test-Ollama) { return }
+  $app = Join-Path $env:LOCALAPPDATA 'Programs\Ollama\ollama app.exe'
+  if (Test-Path $app) {
+    Say 'Starting Ollama'
+    Start-Process $app
+  } elseif (Get-Command ollama -ErrorAction SilentlyContinue) {
+    Say 'Starting ollama serve'
+    Start-Process ollama -ArgumentList serve -WindowStyle Hidden
+  } else {
+    Die 'Ollama is not installed. Install it from https://ollama.com and run this again'
+  }
+  foreach ($i in 1..30) { if (Test-Ollama) { return }; Start-Sleep 1 }
+  Die "Ollama did not start at 127.0.0.1:$Port"
+}
+
+function Start-All {
+  Start-Ollama
+  Up
+  Start-Bridge
+  Status
+  Say 'NOMAD: http://nomad.local:8080'
 }
 
 function Status {
@@ -131,6 +161,7 @@ function Status {
 }
 
 switch ($Action) {
+  'start' { Start-All }
   'up' { Up }
   'down' { Down }
   'status' { Status }
