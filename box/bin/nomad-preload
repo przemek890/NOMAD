@@ -26,23 +26,6 @@ service_status() {
   db_query "SELECT CONCAT(installed, ':', installation_status) FROM services WHERE service_name = '$1'"
 }
 
-# Pytamy Ollamę bezpośrednio, bo API NOMAD ukrywa modele do embeddingów.
-ollama_models() {
-  local url
-  url=$(api GET '/system/settings?key=ai.remoteOllamaUrl' | jq -r '.value // empty')
-  if [[ -z $url ]]; then
-    docker exec nomad_ollama ollama list | awk 'NR > 1 { print $1 }'
-    return
-  fi
-  [[ $url == "$OLLAMA_RELAY_URL" ]] && url="http://localhost:${OLLAMA_RELAY_PORT}"
-  curl -fsS "${url%/}/api/tags" | jq -r '.models[].name'
-}
-
-model_installed() {
-  local models
-  models=$(ollama_models) && grep -qxF -e "$1" -e "$1:latest" <<<"$models"
-}
-
 await_service() {
   local name=$1 status
   local deadline=$((SECONDS + 1800))
@@ -55,7 +38,7 @@ await_service() {
   fail "Usługa ${name} nie zainstalowała się w 30 min. Szczegóły: make logs-admin"
 }
 
-install_service() {
+add_service() {
   local name=$1 status
   status=$(service_status "$name")
   [[ -n $status ]] || fail "Nieznana usługa ${name}"
@@ -65,19 +48,6 @@ install_service() {
     || fail "Nie udało się rozpocząć instalacji ${name}"
   await_service "$name"
   log "✓ ${name}"
-}
-
-add_service() {
-  if [[ $1 == nomad_ollama && -n $NOMAD_OLLAMA_URL ]]; then
-    if curl -fsS -m 5 "http://localhost:${OLLAMA_RELAY_PORT}/api/version" >/dev/null 2>&1; then
-      api POST /ollama/configure-remote --data "$(json --arg u "$OLLAMA_RELAY_URL" '{remoteUrl: $u}')" >/dev/null \
-        || fail "NOMAD nie przyjął adresu LLM ${NOMAD_OLLAMA_URL}"
-      log "✓ LLM: ${NOMAD_OLLAMA_URL}"
-      return
-    fi
-    log "LLM pod ${NOMAD_OLLAMA_URL} nie odpowiada; instaluję Ollamę w kontenerze NOMAD"
-  fi
-  install_service "$1"
 }
 
 add_zim() {
@@ -110,14 +80,6 @@ add_category() {
   [[ $count == 0 ]] || log "Pobieranie w tle: kolekcja ${1} (${count} plików)"
 }
 
-add_model() {
-  model_installed "$1" >/dev/null && return
-  log "Pobieranie modelu ${1}"
-  api POST /ollama/models --data "$(json --arg m "$1" '{model: $m}')" >/dev/null || fail "Nie udało się rozpocząć pobierania ${1}"
-  wait_for 7200 model_installed "$1" || fail "Model ${1} nie został pobrany w ciągu 2 h"
-  log "✓ ${1}"
-}
-
 sync_knowledge() {
   local file target
   while IFS= read -r -d '' file; do
@@ -132,6 +94,16 @@ sync_knowledge() {
 # Domyślnie NOMAD indeksuje każdy pobrany ZIM, co na CPU trwa dniami.
 manual_ingest() {
   api PATCH /system/settings --data '{"key": "rag.defaultIngestPolicy", "value": "Manual"}' >/dev/null
+}
+
+# Wbudowana Ollama liczy tylko embeddingi; czat idzie przez nomad-llm do NOMAD_OLLAMA_URL
+setup_ai() {
+  add_service nomad_ollama
+  api PATCH /system/settings --data "$(json --arg u "$LLM_ROUTER_URL" '{key: "ai.remoteOllamaUrl", value: $u}')" >/dev/null
+  docker exec nomad_ollama ollama show "$EMBED_MODEL" >/dev/null 2>&1 && return
+  log "Pobieranie modelu ${EMBED_MODEL}"
+  docker exec nomad_ollama ollama pull "$EMBED_MODEL" >/dev/null
+  log "✓ ${EMBED_MODEL}"
 }
 
 rag_state() {
@@ -209,11 +181,12 @@ main() {
   [[ -f $SOURCES ]] || fail "Brak ${SOURCES}"
   manual_ingest || log "✗ Nie udało się wyłączyć automatycznego indeksowania; NOMAD zindeksuje wszystkie pliki ZIM"
   local kind item
-  for kind in service zim category map model; do
+  for kind in service zim category map; do
     for item in $(items "$kind"); do
       ("add_${kind}" "$item") || log "✗ Pominięto ${kind} ${item}"
     done
   done
+  (setup_ai) || log "✗ Nie udało się przygotować asystenta AI"
   [[ -d $KNOWLEDGE_DIR ]] && { (sync_knowledge) || log "✗ Nie udało się zsynchronizować bazy wiedzy"; }
   api POST /zim/rescan-library >/dev/null 2>&1 || true
   (

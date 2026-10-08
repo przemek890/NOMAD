@@ -12,7 +12,7 @@ Potrzebne jest około 30 GB wolnego miejsca i internet przy pierwszym uruchomien
 
 ## Instalacja na Macu
 
-1. Zainstaluj [Docker Desktop](https://www.docker.com/products/docker-desktop/) i uruchom go. W **Settings > Resources** ustaw **Memory** na 10 GB.
+1. Zainstaluj [Docker Desktop](https://www.docker.com/products/docker-desktop/) i uruchom go.
 
 2. Zainstaluj narzędzia deweloperskie:
 
@@ -27,19 +27,19 @@ Potrzebne jest około 30 GB wolnego miejsca i internet przy pierwszym uruchomien
    cd NOMAD
    ```
 
-4. Uruchom NOMAD:
+4. Uruchom NOMAD (przy pierwszym uruchomieniu Mac poprosi o hasło, żeby zaufać certyfikatowi HTTPS):
 
    ```bash
    make
    ```
 
-5. Zaufaj lokalnemu certyfikatowi (Mac poprosi o hasło):
+5. Otwórz **https://nomad.localhost**.
+
+6. Do czatu AI zainstaluj [Ollamę](https://ollama.com) i pobierz model:
 
    ```bash
-   make trust
+   ollama pull gemma3:1b
    ```
-
-6. Otwórz **https://nomad.localhost**.
 
 ## Instalacja na Windowsie
 
@@ -92,4 +92,4 @@ Z innego urządzenia w sieci: `http://ADRES-PI:8080`.
 | `make preload` | instaluje treści po zmianie `content/` |
 | `make help` | pozostałe polecenia |
 
-Co ma się pobrać, zmieniasz w `content/sources.txt`, a własne dokumenty dla asystenta AI wrzucasz do `content/knowledge/`. Asystent AI korzysta z [Ollamy](https://ollama.com) na tym komputerze, jeśli jest uruchomiona.
+Co ma się pobrać, zmieniasz w `content/sources.txt`, a własne dokumenty dla asystenta AI wrzucasz do `content/knowledge/`.

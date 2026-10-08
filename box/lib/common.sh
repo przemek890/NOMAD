@@ -2,8 +2,11 @@ readonly COMPOSE_FILE=/opt/nomad-box/compose/nomad.yaml
 readonly IMAGES_DIR=/opt/nomad-box/images
 readonly SECRETS_FILE="${NOMAD_HOME}/secrets.env"
 readonly API_URL=http://localhost:8080/api
-readonly OLLAMA_RELAY_PORT=11435
-readonly OLLAMA_RELAY_URL="http://host.docker.internal:${OLLAMA_RELAY_PORT}"
+# Router LLM: embeddingi liczy wbudowana Ollama (nomad_ollama), czat idzie do NOMAD_OLLAMA_URL
+readonly LLM_ROUTER_PORT=11435
+readonly LLM_ROUTER_URL="http://host.docker.internal:${LLM_ROUTER_PORT}"
+readonly EMBED_OLLAMA=http://127.0.0.1:11434
+readonly EMBED_MODEL=nomic-embed-text:v1.5
 
 : "${NOMAD_URL:=${NOMAD_DOMAIN:+https://${NOMAD_DOMAIN}}}"
 export NOMAD_URL=${NOMAD_URL:-http://localhost:8080}
@@ -23,7 +26,7 @@ wait_for() {
   local deadline=$((SECONDS + seconds))
   until "$@" >/dev/null 2>&1; do
     ((SECONDS < deadline)) || return 1
-    sleep 3
+    sleep 1
   done
 }
 

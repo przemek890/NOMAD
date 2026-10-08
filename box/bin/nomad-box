@@ -50,21 +50,11 @@ EOF
   )
 }
 
-start_ollama_relay() {
-  [[ -n $NOMAD_OLLAMA_URL ]] || return 0
-  local target=${NOMAD_OLLAMA_URL#*://}
-  target=${target%%/*}
-  [[ $target == *:* ]] || target+=:80
-  [[ $target =~ ^(localhost|127\.0\.0\.1): ]] && target="host.docker.internal:${target#*:}"
-  log "LLM: ${NOMAD_OLLAMA_URL} (dla NOMAD: ${OLLAMA_RELAY_URL})"
-  socat "TCP-LISTEN:${OLLAMA_RELAY_PORT},fork,reuseaddr" "TCP4:${target}" &
-}
-
 main() {
   start_engine
   load_images
   ensure_secrets
-  start_ollama_relay
+  nomad-llm serve &
   nomad-domain caddyfile
   log "Uruchamianie stosu Project NOMAD ${NOMAD_VERSION}"
   stack up --detach --remove-orphans

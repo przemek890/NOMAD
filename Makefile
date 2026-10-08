@@ -9,9 +9,11 @@ BAKE := docker buildx bake --file docker-bake.hcl --builder $(BUILDER) $(if $(PL
 BOX := docker compose exec nomad
 ARCHIVE := dist/nomad-box.tar.gz
 ROOT_CA := dist/nomad-root-ca.crt
+CA_PATH := /data/caddy/pki/authorities/local/root.crt
+URL := $(if $(NOMAD_DOMAIN),https://$(NOMAD_DOMAIN),http://localhost:$(or $(NOMAD_PORT),8080))
 IP ?= 127.0.0.1
 
-.PHONY: help init builder images box build image up down restart logs logs-admin status preload shell hosts ca trust export import prune clean
+.PHONY: help init builder images box build image up down restart logs logs-admin status preload shell hosts trust export import prune clean
 
 help: ## Wyświetla listę poleceń
 	@grep -E '^[a-z-]+:.*## ' $(firstword $(MAKEFILE_LIST)) | awk 'BEGIN {FS = ":.*## "} {printf "  \033[36m%-11s\033[0m %s\n", $$1, $$2}'
@@ -36,8 +38,9 @@ image:
 	@docker image inspect $(NOMAD_BOX_IMAGE) >/dev/null 2>&1 || $(MAKE) build
 
 up: init image ## Buduje (jeśli trzeba) i uruchamia NOMAD z treściami z content/ (domyślne polecenie: make)
-	docker compose up --detach
-	@echo "NOMAD startuje i pobiera treści w tle. Postęp i adres panelu: make logs"
+	docker compose up --detach --wait
+	@$(if $(NOMAD_DOMAIN),$(MAKE) --no-print-directory trust)
+	@echo "NOMAD działa: $(URL). Treści pobierają się w tle, postęp: make logs"
 
 down: ## Zatrzymuje NOMAD (dane zostają)
 	docker compose down
@@ -62,19 +65,20 @@ shell: ## Powłoka wewnątrz nomad-box
 hosts: ## Wypisuje linię do /etc/hosts dla domeny (IP=adres dla innych urządzeń)
 	@$(BOX) nomad-domain hosts $(IP)
 
-ca: ## Eksportuje certyfikat lokalnego CA do dist/nomad-root-ca.crt
-	@mkdir -p dist
-	docker compose cp proxy:/data/caddy/pki/authorities/local/root.crt $(ROOT_CA)
-
-trust: ca ## Dodaje lokalne CA do zaufanych w systemie (wymaga sudo)
 ifeq ($(shell uname -s),Darwin)
-	sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain $(ROOT_CA)
+trust_ca = sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain $(1)
 else ifneq ($(shell grep -qi microsoft /proc/version 2>/dev/null && echo wsl),)
-	cp $(ROOT_CA) /mnt/c/Users/Public/nomad-root-ca.crt
-	powershell.exe -NoProfile -Command "Start-Process certutil -Verb RunAs -Wait -ArgumentList '-addstore','-f','Root','C:\Users\Public\nomad-root-ca.crt'"
+trust_ca = cp $(1) /mnt/c/Users/Public/nomad-root-ca.crt && powershell.exe -NoProfile -Command "Start-Process certutil -Verb RunAs -Wait -ArgumentList '-addstore','-f','Root','C:\Users\Public\nomad-root-ca.crt'"
 else
-	sudo cp $(ROOT_CA) /usr/local/share/ca-certificates/nomad-root-ca.crt && sudo update-ca-certificates
+trust_ca = sudo cp $(1) /usr/local/share/ca-certificates/nomad-root-ca.crt && sudo update-ca-certificates
 endif
+
+trust: ## Dodaje certyfikat HTTPS do zaufanych w systemie (tylko raz, poprosi o hasło)
+	@mkdir -p dist
+	@for i in $$(seq 30); do docker compose cp proxy:$(CA_PATH) $(ROOT_CA).new >/dev/null 2>&1 && break; sleep 1; done
+	@test -f $(ROOT_CA).new || { echo "Proxy HTTPS nie wystawił certyfikatu. Sprawdź: docker compose logs proxy"; exit 1; }
+	@if cmp -s $(ROOT_CA).new $(ROOT_CA); then rm $(ROOT_CA).new; \
+	else echo "Dodawanie certyfikatu HTTPS do zaufanych"; $(call trust_ca,$(ROOT_CA).new) && mv $(ROOT_CA).new $(ROOT_CA); fi
 
 export: ## Zapisuje obraz do dist/nomad-box.tar.gz (przeniesienie na inny komputer)
 	@mkdir -p dist

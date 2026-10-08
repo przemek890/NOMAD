@@ -2,7 +2,7 @@
 
 FROM docker:28.5-dind
 
-RUN apk add --no-cache bash curl jq socat
+RUN apk add --no-cache bash caddy curl jq socat
 
 ARG NOMAD_VERSION
 ARG NOMAD_ADMIN_IMAGE
@@ -24,7 +24,7 @@ ENV NOMAD_VERSION=${NOMAD_VERSION} \
     NOMAD_DOZZLE_IMAGE=${NOMAD_DOZZLE_IMAGE} \
     NOMAD_HOME=/opt/project-nomad \
     DOCKER_TLS_CERTDIR="" \
-    NOMAD_OLLAMA_URL="" \
+    NOMAD_OLLAMA_URL=http://localhost:11434 \
     NOMAD_INTERNET_TEST_URL=https://1.1.1.1/cdn-cgi/trace \
     NOMAD_DOMAIN="" \
     NOMAD_APPS="wiki=8090 cyberchef=8100 notes=8200 kolibri=8310 pdf=8400 files=8410 books=8420 tools=8430 mesh=8450 translate=8460 homebox=8470 vault=https:8480 media=8490 meshcore=https:8500 logs=9999"
@@ -37,7 +37,7 @@ COPY --chmod=0755 box/bin/ /usr/local/bin/
 VOLUME ["/opt/project-nomad"]
 EXPOSE 8080 8090 8100 8200 8310 8400-8500 9999
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=10m --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10m --start-interval=2s --retries=3 \
   CMD curl -fsS http://localhost:8080/api/health || exit 1
 
 ENTRYPOINT ["nomad-box"]

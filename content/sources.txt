@@ -3,7 +3,6 @@
 
 # Usługi z panelu NOMAD
 service nomad_kiwix_server
-service nomad_ollama
 service nomad_flatnotes
 service nomad_cyberchef
 
@@ -18,12 +17,7 @@ category agriculture-essential
 # Mapy krajów (kod ISO)
 map PL
 
-# Model do embeddingów, pobierany do Ollamy wskazanej w NOMAD_OLLAMA_URL.
-# Model do czatu pobierz sam w tej Ollamie, np. ollama pull gemma3:1b
-model nomic-embed-text:v1.5
-
-# Pliki ZIM indeksowane dla asystenta AI (nazwa bez daty i .zim albo pełna nazwa pliku).
-# Pozostałe ZIM-y są tylko do przeglądania: na CPU indeksowanie Wikipedii trwa kilka dni.
+# Pliki ZIM indeksowane dla asystenta AI (nazwa bez daty); pozostałe są tylko do przeglądania.
 # Dokumenty z content/knowledge są indeksowane zawsze.
 embed nhs.uk_en_medicines
 embed zimgit-medicine_en
