@@ -8,9 +8,11 @@ service nomad_cyberchef
 
 # ZIM files from download.kiwix.org; a URL without a date and .zim means the latest version
 zim https://download.kiwix.org/zim/wikipedia/wikipedia_pl_all_nopic
+# MedlinePlus from medicine-standard, without its FDA drug labels (1.7 GB download + ~2 GB in MySQL)
+zim https://download.kiwix.org/zim/other/medlineplus.gov_en_all
 
 # NOMAD collections (Easy Setup): <category>-<tier>; a higher tier includes the lower ones
-category medicine-standard
+category medicine-essential
 category diy-essential
 category agriculture-essential
 

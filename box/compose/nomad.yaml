@@ -52,7 +52,8 @@ services:
     image: ${NOMAD_MYSQL_IMAGE}
     pull_policy: never
     container_name: nomad_mysql
-    command: [--performance-schema=OFF, --innodb-buffer-pool-size=64M]
+    # No binary log: one server without replication, and it grows by GBs during imports
+    command: [--performance-schema=OFF, --innodb-buffer-pool-size=64M, --disable-log-bin]
     environment:
       MYSQL_ROOT_PASSWORD: ${NOMAD_DB_ROOT_PASSWORD}
       MYSQL_DATABASE: nomad
