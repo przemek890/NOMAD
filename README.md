@@ -19,18 +19,21 @@ Before the first install:
 - **Windows:** in PowerShell as administrator run `wsl --install -d Ubuntu` and restart. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) and turn on **Settings > Resources > WSL integration > Ubuntu**. Run the command below in the **Ubuntu** app.
 - **Raspberry Pi, Ubuntu, Debian:** nothing; Docker and the tools are installed for you.
 
-The repository is private, so the installer needs a read-only token: on GitHub open **Settings > Developer settings > Fine-grained tokens > Generate new token**, choose **Only select repositories: NOMAD** and **Contents: Read-only**.
-
-Install and start NOMAD:
+Get the project folder (`git clone https://github.com/przemek890/NOMAD.git`, or copy it from another computer) and run in it:
 
 ```bash
-TOKEN=github_pat_...
-curl -fsSL -H "Authorization: token $TOKEN" https://raw.githubusercontent.com/przemek890/NOMAD/main/install.sh | NOMAD_GITHUB_TOKEN=$TOKEN bash
+bash install.sh
 ```
 
-NOMAD goes to `~/nomad` on macOS and `/opt/nomad` elsewhere, and starts again after a reboot. Run the same command to update it. When it finishes, open **https://nomad.localhost** on macOS and Windows, or `http://DEVICE-ADDRESS:8080` from another device.
+Once the repository is public, one command also downloads it to `~/nomad` on macOS or `/opt/nomad` elsewhere, and updates it when run again:
 
-Chat uses an LLM server on the same machine at `http://localhost:11434` unless you add another address, e.g. `NOMAD_LLM_URL=http://192.168.1.20:1234` before `bash`.
+```bash
+curl -fsSL https://raw.githubusercontent.com/przemek890/NOMAD/main/install.sh | bash
+```
+
+NOMAD starts again after a reboot. When the installer finishes, open **https://nomad.localhost** on macOS and Windows, or `http://DEVICE-ADDRESS:8080` from another device.
+
+Chat uses an LLM server on the same machine at `http://localhost:11434`. For another one, run e.g. `NOMAD_LLM_URL=http://192.168.1.20:1234 bash install.sh`.
 
 ## Mini PC wired to a Mac
 
@@ -40,11 +43,10 @@ NOMAD runs on the mini PC, connected to the Mac with an Ethernet cable; the LLM 
 
 2. Start the LLM server on the Mac so it accepts connections from the network (for Ollama: `OLLAMA_HOST=0.0.0.0`).
 
-3. On the mini PC:
+3. Copy the project folder to the mini PC (`data/` can come along to skip downloading the content again) and run in it:
 
    ```bash
-   TOKEN=github_pat_...
-   curl -fsSL -H "Authorization: token $TOKEN" https://raw.githubusercontent.com/przemek890/NOMAD/main/install.sh | NOMAD_GITHUB_TOKEN=$TOKEN NOMAD_LLM_URL=http://192.168.2.1:11434 bash
+   NOMAD_LLM_URL=http://192.168.2.1:11434 bash install.sh
    ```
 
 4. On the Mac, open the address the installer prints at the end.

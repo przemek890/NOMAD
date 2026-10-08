@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
-# Installs or updates NOMAD Box and starts it:
-#   curl -fsSL https://raw.githubusercontent.com/przemek890/NOMAD/main/install.sh | bash
-# Options (environment): NOMAD_LLM_URL (LLM server for chat), NOMAD_DIR (install location),
-#   NOMAD_GITHUB_TOKEN (read-only token for a private repository)
+# Installs NOMAD Box and starts it, either from a copy of the repository (./install.sh)
+# or straight from GitHub (curl -fsSL .../install.sh | bash), which also updates it.
+# Options (environment): NOMAD_LLM_URL (LLM server for chat), NOMAD_DIR (where to clone)
 set -Eeuo pipefail
 
 readonly REPO=https://github.com/przemek890/NOMAD.git
 readonly OS=$(uname -s)
 
-if [[ $OS == Darwin ]]; then
+if [[ -f ${BASH_SOURCE[0]:-} ]]; then
+  LOCAL=1
+  DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+elif [[ $OS == Darwin ]]; then
   DIR=${NOMAD_DIR:-$HOME/nomad}
 else
   DIR=${NOMAD_DIR:-/opt/nomad}
@@ -29,13 +31,13 @@ is_wsl() {
 
 install_tools() {
   if [[ $OS == Darwin ]]; then
-    command -v git >/dev/null && command -v make >/dev/null || die "Install the developer tools first: xcode-select --install"
+    command -v make >/dev/null || die "Install the developer tools first: xcode-select --install"
     command -v docker >/dev/null || die "Install Docker Desktop first: https://www.docker.com/products/docker-desktop/"
     return
   fi
   command -v apt-get >/dev/null || die "Install git, make and Docker, then run this again"
   local -a missing=()
-  command -v git >/dev/null || missing+=(git)
+  [[ -n ${LOCAL:-} ]] || command -v git >/dev/null || missing+=(git)
   command -v make >/dev/null || missing+=(make)
   if ((${#missing[@]})); then
     say "Installing ${missing[*]}"
@@ -62,25 +64,17 @@ check_page_size() {
   die "Switched to the kernel with 4 KB pages. Reboot and run the same command again."
 }
 
-repo_url() {
-  if [[ -n ${NOMAD_GITHUB_TOKEN:-} ]]; then
-    printf 'https://x-access-token:%s@%s' "$NOMAD_GITHUB_TOKEN" "${REPO#https://}"
-  else
-    printf '%s' "$REPO"
-  fi
-}
-
 get_repo() {
+  [[ -z ${LOCAL:-} ]] || return 0
   if [[ -d $DIR/.git ]]; then
     say "Updating ${DIR}"
-    [[ -z ${NOMAD_GITHUB_TOKEN:-} ]] || git -C "$DIR" remote set-url origin "$(repo_url)"
     git -C "$DIR" pull --ff-only --quiet
     return
   fi
   [[ ! -e $DIR || -z $(ls -A "$DIR") ]] || die "${DIR} exists and is not NOMAD; choose another folder with NOMAD_DIR"
   say "Downloading NOMAD to ${DIR}"
   [[ -w ${DIR%/*} ]] || sudo install -d -o "$(id -u)" -g "$(id -g)" "$DIR"
-  git clone --quiet "$(repo_url)" "$DIR"
+  git clone --quiet "$REPO" "$DIR"
 }
 
 # HTTPS at nomad.localhost only helps a browser on the same machine (macOS, Windows)
