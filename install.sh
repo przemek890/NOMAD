@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Installs NOMAD Box and starts it, either from a copy of the repository (./install.sh)
 # or straight from GitHub (curl -fsSL .../install.sh | bash), which also updates it.
-# Options (environment): NOMAD_LLM_URL (LLM server for chat), NOMAD_DIR (where to clone)
+# Options (environment): NOMAD_LLM_URL (LLM server for chat), NOMAD_EMBED_URL (server for
+# embeddings instead of the bundled Ollama), NOMAD_DIR (where to clone)
 set -Eeuo pipefail
 
 readonly REPO=https://github.com/przemek890/NOMAD.git
@@ -87,9 +88,12 @@ configure() {
       : >"$env"
     fi
   fi
-  [[ -n ${NOMAD_LLM_URL:-} ]] || return 0
-  { grep -v '^NOMAD_LLM_URL=' "$env" || true; echo "NOMAD_LLM_URL=${NOMAD_LLM_URL}"; } >"${env}.tmp"
-  mv "${env}.tmp" "$env"
+  local name
+  for name in NOMAD_LLM_URL NOMAD_EMBED_URL; do
+    [[ -n ${!name:-} ]] || continue
+    { grep -v "^${name}=" "$env" || true; echo "${name}=${!name}"; } >"${env}.tmp"
+    mv "${env}.tmp" "$env"
+  done
 }
 
 start() {

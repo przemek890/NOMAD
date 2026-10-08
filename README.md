@@ -28,7 +28,14 @@ You use NOMAD in the browser on your computer: **http://nomad.local:8080**.
 
 ### First time
 
-1. Install [Ollama](https://ollama.com) on your computer and download a model, e.g. `ollama pull qwen3:8b`.
+1. Install [Ollama](https://ollama.com) on your computer and download a chat model and the embedding model
+   (the mini PC then needs no AI of its own, which saves ~3 GB of disk and RAM):
+
+   ```bash
+   ollama pull qwen3:8b
+   ollama pull nomic-embed-text:v1.5
+   ```
+
    macOS and Linux also need [Caddy](https://caddyserver.com/docs/install) (`brew install caddy`).
 2. Connect the mini PC to your computer with an Ethernet cable.
 3. Start everything on your computer:
@@ -39,7 +46,7 @@ You use NOMAD in the browser on your computer: **http://nomad.local:8080**.
    (a Windows mini PC: in the **Ubuntu** app, see Install):
 
    ```bash
-   NOMAD_LLM_URL=http://10.77.0.1:11434 bash install.sh
+   NOMAD_LLM_URL=http://10.77.0.1:11434 NOMAD_EMBED_URL=http://10.77.0.1:11434 bash install.sh
    ```
 
 5. Open **http://nomad.local:8080** in the browser on your computer.
@@ -83,5 +90,6 @@ and no "ACPI BIOS Error" messages on the screen of HP thin clients.
 | `make` | starts NOMAD |
 | `make down` | stops NOMAD |
 | `make logs` | shows what is happening |
+| `make refresh` | applies changed `box/` scripts after `git pull` without a full rebuild |
 
 What gets downloaded is listed in `content/sources.txt`. Put your own documents for the AI assistant in `content/knowledge/`.

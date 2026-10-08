@@ -13,7 +13,7 @@ CA_PATH := /data/caddy/pki/authorities/local/root.crt
 URL := $(if $(NOMAD_DOMAIN),https://$(NOMAD_DOMAIN),http://localhost:$(or $(NOMAD_PORT),8080))
 IP ?= 127.0.0.1
 
-.PHONY: help init builder images box build image up down restart logs logs-admin status preload shell hosts trust export import prune clean
+.PHONY: help init builder images box build refresh image up down restart logs logs-admin status preload shell hosts trust export import prune clean
 
 help: ## Show available commands
 	@grep -E '^[a-z-]+:.*## ' $(firstword $(MAKEFILE_LIST)) | awk 'BEGIN {FS = ":.*## "} {printf "  \033[36m%-11s\033[0m %s\n", $$1, $$2}'
@@ -33,6 +33,11 @@ box: builder ## Build the nomad-box image with the NOMAD images inside
 	$(BAKE) box
 
 build: images box ## Full build (images + box)
+
+refresh: ## Put changed box/ scripts into the existing image and restart (no full rebuild)
+	printf 'FROM %s\nCOPY box/compose/ /opt/nomad-box/compose/\nCOPY box/lib/ /usr/local/lib/nomad-box/\nCOPY --chmod=0755 box/bin/ /usr/local/bin/\n' \
+		$(NOMAD_BOX_IMAGE) | docker build --quiet --tag $(NOMAD_BOX_IMAGE) --file - .
+	docker compose up --detach --wait
 
 image:
 	@docker image inspect $(NOMAD_BOX_IMAGE) >/dev/null 2>&1 || $(MAKE) --no-print-directory build prune

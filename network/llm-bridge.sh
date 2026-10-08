@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Makes the local Ollama reachable for the mini PC, only on the cable (10.77.0.1:11434).
 # Ollama itself keeps listening on 127.0.0.1 only; this bridge passes through
-# just the endpoints NOMAD's chat needs (no pulling or deleting models).
+# just the endpoints NOMAD's chat and embeddings need (no pulling or deleting models).
 # macOS and Linux (needs Caddy); Windows: link.ps1 bridge-start
 #
 #   network/llm-bridge.sh start|stop|status
@@ -49,7 +49,7 @@ http://:${PORT} {
 	}
 	@inference {
 		method POST
-		path /v1/chat/completions /v1/completions /api/chat /api/generate /api/show
+		path /v1/chat/completions /v1/completions /api/chat /api/generate /api/show /api/embed /api/embeddings /v1/embeddings
 	}
 	handle @read {
 		reverse_proxy ${UPSTREAM} {

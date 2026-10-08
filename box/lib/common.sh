@@ -2,10 +2,10 @@ readonly COMPOSE_FILE=/opt/nomad-box/compose/nomad.yaml
 readonly IMAGES_DIR=/opt/nomad-box/images
 readonly SECRETS_FILE="${NOMAD_HOME}/secrets.env"
 readonly API_URL=http://localhost:8080/api
-# LLM router: the bundled Ollama (nomad_ollama) computes embeddings, chat goes to NOMAD_LLM_URL
+# LLM router: chat goes to NOMAD_LLM_URL; embeddings go to NOMAD_EMBED_URL or, when it is
+# empty, to the bundled Ollama (nomad_ollama)
 readonly LLM_ROUTER_PORT=11435
 readonly LLM_ROUTER_URL="http://host.docker.internal:${LLM_ROUTER_PORT}"
-readonly EMBED_OLLAMA=http://127.0.0.1:11434
 readonly EMBED_MODEL=nomic-embed-text:v1.5
 
 : "${NOMAD_URL:=${NOMAD_DOMAIN:+https://${NOMAD_DOMAIN}}}"
@@ -40,10 +40,21 @@ api() {
   curl -fsS -X "$method" -H 'Content-Type: application/json' "${API_URL}${path}" "$@"
 }
 
-# NOMAD_LLM_URL as seen from the container: localhost is the machine running Docker
-llm_upstream() {
-  sed -E 's#://(localhost|127\.0\.0\.1)([:/]|$)#://host.docker.internal\2#; s#/$##' <<<"$NOMAD_LLM_URL"
+# A URL as seen from the container: localhost is the machine running Docker
+docker_host_url() {
+  sed -E 's#://(localhost|127\.0\.0\.1)([:/]|$)#://host.docker.internal\2#; s#/$##' <<<"$1"
 }
+
+llm_upstream() {
+  docker_host_url "$NOMAD_LLM_URL"
+}
+
+if [[ -n ${NOMAD_EMBED_URL:-} ]]; then
+  EMBED_OLLAMA=$(docker_host_url "$NOMAD_EMBED_URL")
+else
+  EMBED_OLLAMA=http://127.0.0.1:11434
+fi
+readonly EMBED_OLLAMA
 
 json() {
   jq -cn "$@"

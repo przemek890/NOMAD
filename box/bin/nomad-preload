@@ -96,8 +96,20 @@ manual_ingest() {
   api PATCH /system/settings --data '{"key": "rag.defaultIngestPolicy", "value": "Manual"}' >/dev/null
 }
 
+# Remote embeddings (NOMAD_EMBED_URL): no bundled Ollama, which saves ~3 GB of disk and the RAM
+setup_remote_embeddings() {
+  api POST /ollama/configure-remote --data "$(json --arg u "$LLM_ROUTER_URL" '{remoteUrl: $u}')" >/dev/null \
+    || fail "Could not connect NOMAD to ${NOMAD_LLM_URL}. Is the LLM server running?"
+  curl -fs -m 5 "${EMBED_OLLAMA}/api/tags" | jq -e --arg m "$EMBED_MODEL" '.models[] | select(.name == $m)' >/dev/null \
+    || log "No ${EMBED_MODEL} at ${NOMAD_EMBED_URL}; run there: ollama pull ${EMBED_MODEL}"
+}
+
 # The bundled Ollama only computes embeddings; chat goes through nomad-llm to NOMAD_LLM_URL
 setup_ai() {
+  if [[ -n ${NOMAD_EMBED_URL:-} ]]; then
+    setup_remote_embeddings
+    return
+  fi
   add_service nomad_ollama
   api PATCH /system/settings --data "$(json --arg u "$LLM_ROUTER_URL" '{key: "ai.remoteOllamaUrl", value: $u}')" >/dev/null
   curl -fs -m 5 "$(llm_upstream)/v1/models" >/dev/null \
