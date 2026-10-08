@@ -21,9 +21,9 @@ Otwórz http://nomad.local:8080 i sprawdź po kolei:
 | 1 | strona główna | kafelki: Information Library, Maps, Notes, AI Assistant, Knowledge Search |
 | 2 | **Information Library** → Wikipedia, wyszukaj `Warszawa` | lista artykułów, artykuł się otwiera |
 | 3 | **Maps**, wpisz `52.2297, 21.0122`, przybliż | Warszawa z ulicami i dzielnicami |
-| 4 | **Notes** | notatki „Downloaded content” i „Benchmarks” |
+| 4 | **Notes** | notatki „Jak to działa”, „Benchmarks” i „Downloaded content” |
 | 5 | **Knowledge Search**, wpisz `snake bite first aid` | fragmenty z poradników, dopasowanie powyżej 60% |
-| 6 | **AI Assistant**, model `local-qwen`, Knowledge Base włączone, zapytaj o pytanie z tabeli niżej | odpowiedź w kilkanaście sekund, zgodna z tabelą |
+| 6 | **AI Assistant**, model `local-qwen`, Knowledge Base włączone, zapytaj o pytanie z tabeli niżej | odpowiedź w 10–60 s (z wyszukiwaniem), zgodna z tabelą, ze źródłem |
 | 7 | **Settings → Benchmark → Run Full Benchmark** | wynik po ~8 min: system i AI na Twoim modelu z komputera (NOMAD niczego nie pobiera) |
 | 8 | **Settings → System** | obciążenie CPU, zajęty RAM i dysk |
 | 9 | wyłącz Wi‑Fi na komputerze, powtórz 2–6 | działa tak samo |
@@ -47,14 +47,16 @@ W **AI Assistant**: model `local-qwen`, **Knowledge Base** włączone, **Thinkin
 | 3 | Co zrobić, gdy pominę dawkę warfaryny? Odpowiedz po polsku. | angielskie źródła, odpowiedź po polsku | to samo co w 2, po polsku |
 | 4 | What is the first aid for a snake bite in the field? | poradniki medyczne (CDC, Military Medicine) | unieruchom, spokój, szybko do szpitala; nie nacinaj, nie wysysaj |
 | 5 | How do you recognise and treat heat stroke? | j.w. | wysoka temperatura, splątanie; natychmiast chłodzić, cień, woda, pomoc medyczna |
+| 6 | Kto jest dyrektorem 1 LO w Tarnowie? Odpowiedz jednym zdaniem. | model **sam** szuka w Wikipedii (narzędzia), poprawia hasło i podaje źródło | Małgorzata Dulęba-Szpala, artykuł „I Liceum Ogólnokształcące im. Kazimierza Brodzińskiego w Tarnowie” |
+| 7 | Jakie materiały są pobrane w NOMAD? | model sam czyta notatkę *Downloaded content* | lista: Wikipedia PL, poradniki medyczne, mapa Polski… |
 
 Potem pokaż, że działa bez internetu i bez AI:
 
 | # | Zrób | Co pokazuje |
 |---|---|---|
-| 6 | wyłącz Wi‑Fi na komputerze, zadaj pytanie 2 jeszcze raz | AI i baza wiedzy działają offline |
-| 7 | **Knowledge Search**: `snake bite first aid` | wyszukiwanie po znaczeniu bez modelu AI, w ułamku sekundy |
-| 8 | zamknij Ollamę na komputerze, powtórz 7, otwórz **Information Library** i **Maps** | Wikipedia, mapy i wyszukiwarka działają bez komputera z modelem |
+| 8 | wyłącz Wi‑Fi na komputerze, zadaj pytanie 2 i 6 jeszcze raz | AI, baza wiedzy i Wikipedia działają offline |
+| 9 | **Knowledge Search**: `snake bite first aid`, potem `Rysy` | fragmenty z poradników i z Wikipedii bez modelu AI, w ułamku sekundy |
+| 10 | zamknij Ollamę na komputerze, powtórz 9, otwórz **Information Library** i **Maps** | Wikipedia, mapy i wyszukiwarka działają bez komputera z modelem |
 
 <!-- results: written by ./nomad report, do not edit below -->
 

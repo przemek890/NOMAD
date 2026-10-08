@@ -92,10 +92,14 @@ Model jest dostępny tylko na kablu. Ustawienia Twojego komputera (np. własna �
 
 - **Information Library** – Wikipedia PL i poradniki (medycyna, majsterkowanie, rolnictwo), wyszukiwanie po słowach.
 - **Maps** – mapa Polski offline.
-- **AI Assistant** – czat odpowiadający na podstawie bazy wiedzy (wymaga modelu na komputerze).
-- **Knowledge Search** (kafelek, port 8070) – znajduje w bazie wiedzy fragmenty najbliższe znaczeniem pytaniu, **bez modelu AI**. Źródła są głównie angielskie, więc pytaj po angielsku.
-- **Notes** – notatki z repozytorium (`content/notes`): **Benchmarks** (jak sprawdzić, że działa, i wyniki pomiarów)
-  oraz **Downloaded content** (lista pobranych materiałów, w NOMAD aktualizuje się sama).
+- **AI Assistant** – czat z modelem z komputera, który **sam przeszukuje** Wikipedię, bazę wiedzy i notatki
+  (narzędzia) i podaje źródło; gdy nie znajdzie, mówi, że nie wie.
+- **Knowledge Search** (kafelek, port 8070) – fragmenty z bazy wiedzy (po znaczeniu; poradniki są po angielsku)
+  i z Wikipedii (po słowach), **bez modelu AI**.
+- **Notes** – notatki z repozytorium (`content/notes`): **Jak to działa**, **Benchmarks** (jak sprawdzić, że działa,
+  pytania na prezentację, wyniki pomiarów) i **Downloaded content** (lista pobranych materiałów, w NOMAD aktualizuje się sama).
+
+Jak to wszystko działa, krok po kroku (budowa, sieć, AI, decyzje, testy, słowniczek): **[Jak to działa](content/notes/Jak%20to%20dzia%C5%82a.md)**.
 
 Lista pobieranych materiałów: `content/sources.txt`. Własne dokumenty dla AI wrzuć do `content/knowledge/`.
 

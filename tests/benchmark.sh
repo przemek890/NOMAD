@@ -23,6 +23,7 @@ readonly QUESTIONS=(
   "How do you recognise and treat heat stroke?|cool|water|shade"
   "Co zrobić, gdy pominę dawkę warfaryny? Odpowiedz po polsku.|dawk|lekarz|przypomn"
   "Jaka jest stolica Polski i jaka rzeka przez nią płynie?|Warszaw.*Wisł|Wisł.*Warszaw"
+  "Kto jest dyrektorem 1 LO w Tarnowie? Odpowiedz jednym zdaniem.|Dulęba"
 )
 # Knowledge Search questions (no chat model)
 readonly SEARCHES=("missed dose of warfarin" "snake bite first aid" "heat stroke treatment" "water purification")
@@ -66,10 +67,12 @@ llm_speed() {
 # | question | seconds | ok? | start of the answer |
 ask() {
   local model=$1 question=${2%%|*} pattern=${2#*|} reply seconds answer
-  reply=$(curl -sS -m 600 -w '\n%{time_total}' "$NOMAD/api/ollama/chat" -H 'Content-Type: application/json' \
-    --data "$(jq -cn --arg m "$model" --arg q "$question" '{model: $m, stream: false, think: false, messages: [{role: "user", content: $q}]}')")
+  # Streamed with tools, as on NOMAD's chat page
+  reply=$(curl -sS -N -m 600 -w '\n%{time_total}' "$NOMAD/api/ollama/chat" -H 'Content-Type: application/json' \
+    --data "$(jq -cn --arg m "$model" --arg q "$question" '{model: $m, stream: true, think: false, messages: [{role: "user", content: $q}]}')")
   seconds=${reply##*$'\n'}
-  answer=$(jq -r '.message.content // "(no answer)"' <<<"${reply%$'\n'*}" 2>/dev/null | tr '\n|' '  ')
+  answer=$(sed -n 's/^data: //p' <<<"${reply%$'\n'*}" | jq -rj '.message.content // empty' 2>/dev/null | tr '\n|' '  ')
+  answer=${answer:-(no answer)}
   printf '| %s | %.0f s | %s | %s… |\n' "$question" "$seconds" \
     "$(grep -qiE "$pattern" <<<"$answer" && echo ✅ || echo ❌)" "${answer:0:160}"
 }

@@ -38,8 +38,7 @@ services:
       - nomad-engine:/var/lib/docker
       - ./content:/opt/nomad-box/content:ro
 
-  # Knowledge search without the chat model: questions become nomic-embed-text vectors
-  # here (the model NOMAD indexes with), Qdrant in nomad-box returns the closest passages
+  # Embeddings on this machine (nomic-embed-text, the model NOMAD indexes with), for Knowledge Search
   embed:
     <<: *defaults
     build: embed
@@ -52,11 +51,16 @@ services:
     volumes:
       - ${NOMAD_DATA_DIR:-./data}/models:/models
 
+  # Knowledge Search page, and tools (Wikipedia, knowledge base, notes) for NOMAD's chat
   search:
     <<: *defaults
     image: python:3.13-alpine
     container_name: nomad-search
     command: [python, /app/server.py]
+    environment:
+      LLM_URL: ${NOMAD_LLM_URL:-http://localhost:11434}
+    extra_hosts:
+      - host.docker.internal:host-gateway
     ports:
       - ${NOMAD_SEARCH_PORT:-8070}:8070
     volumes:

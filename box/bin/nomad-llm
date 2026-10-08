@@ -28,6 +28,18 @@ write_config() {
 	handle @models {
 		reverse_proxy 127.0.0.1:${MODELS_PORT}
 	}
+	# Chat goes through the search service, which gives the model tools (Wikipedia, knowledge base,
+	# notes); while that service is down, chat goes straight to the LLM server
+	@chat path /api/chat
+	handle @chat {
+		reverse_proxy search:8070 $(llm_upstream) {
+			lb_policy first
+			lb_try_duration 2s
+			fail_duration 30s
+			header_up Host {upstream_hostport}
+			flush_interval -1
+		}
+	}
 	@embed path /api/embed /api/embeddings /v1/embeddings
 	handle @embed {
 		reverse_proxy ${EMBED_OLLAMA} {

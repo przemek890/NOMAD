@@ -60,7 +60,10 @@ library() {
   book=$(get "$KIWIX/catalog/v2/entries?count=100" | grep -o 'href="/content/wikipedia[^"]*"' | cut -d/ -f3 | tr -d '"' | sort -r | head -1)
   [[ -n $book ]] || { echo "no Wikipedia in the library"; return 1; }
   # 60 s: the first search after a pause reads the index of a large ZIM from a slow disk
-  get "$KIWIX/search?content=${book}&pattern=Warszawa" 60 | grep -q "href=\"/content/${book}/" || { echo "no results in ${book}"; return 1; }
+  local page
+  # The whole page first: grep -q stops at the first match, which breaks the pipe of curl (pipefail)
+  page=$(get "$KIWIX/search?content=${book}&pattern=Warszawa" 60) || return 1
+  grep -q "href=\"/content/${book}/" <<<"$page" || { echo "no results in ${book}"; return 1; }
   echo "$book"
 }
 
@@ -94,6 +97,18 @@ ai_answer() {
     | jq -r '.message.content // empty')
   [[ $answer == *[Dd]ose* ]] || { echo "unexpected answer: ${answer:0:120}"; return 1; }
   echo "${model}: ${answer:0:120}"
+}
+
+# The chat looks it up in Wikipedia itself (tools, streamed like NOMAD's chat page)
+ai_wikipedia() {
+  local model answer
+  model=$(get "$NOMAD/api/ollama/installed-models" | jq -r '[.[].name | select(contains("embed") | not)][0] // empty')
+  answer=$(curl -fsS -N -m 400 "$NOMAD/api/ollama/chat" -H 'Content-Type: application/json' --data "$(jq -cn --arg m "$model" \
+    '{model: $m, stream: true, think: false, messages: [{role: "user",
+      content: "Kto jest dyrektorem I Liceum Ogólnokształcącego w Tarnowie? Jednym zdaniem."}]}')" \
+    | sed -n 's/^data: //p' | jq -rj '.message.content // empty')
+  [[ $answer == *Dulęba* ]] || { echo "unexpected answer: ${answer:0:160}"; return 1; }
+  echo "${answer:0:160}"
 }
 
 # Knowledge Search finds the right passage without the chat model
@@ -131,6 +146,7 @@ check "Knowledge Search (no chat model)" knowledge_search
 if ai_connected >/dev/null 2>&1; then
   check "AI: chat model" ai_connected
   check "AI: answer from the knowledge base" ai_answer
+  check "AI: looks it up in Wikipedia (tools)" ai_wikipedia
 else
   fail "AI: chat model not connected (is the computer running the model on and start.sh run?)"
 fi

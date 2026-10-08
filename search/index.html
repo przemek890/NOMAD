@@ -22,6 +22,7 @@
   #status { margin: 16px 0; color: var(--muted); }
   article { margin: 0 0 12px; padding: 16px; background: var(--card); border: 1px solid var(--line); border-radius: 8px; }
   article h2 { margin: 0 0 4px; font-size: 1.05rem; }
+  section > h2 { margin: 24px 0 12px; font-size: 1.15rem; }
   .meta { margin: 0 0 8px; font-size: .85rem; color: var(--muted); }
   .text { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 </style>
@@ -29,8 +30,8 @@
 <body>
 <main>
   <h1>Knowledge Search</h1>
-  <p class="lead">Finds the passages of the NOMAD knowledge base closest in meaning to your question.
-    Works without the AI chat model. Ask in the language of your documents (most indexed sources are English).</p>
+  <p class="lead">Finds passages for your question in the knowledge base (closest in meaning; most guides are
+    English, so ask in English) and in the offline Wikipedia (by title and words). Works without the AI chat model.</p>
   <form id="form">
     <input id="q" name="q" type="search" placeholder="e.g. how to stop heavy bleeding" autofocus required>
     <button>Search</button>
@@ -59,7 +60,9 @@
       const response = await fetch('/api/search?' + new URLSearchParams({ q, limit: 8 }));
       const body = await response.json();
       if (!response.ok) throw new Error(body.error);
-      status.textContent = body.results.length ? '' : 'Nothing found. Is the knowledge base indexed yet?';
+      const wikipedia = body.wikipedia || [];
+      status.textContent = body.results.length || wikipedia.length ? '' : 'Nothing found. Is the knowledge base indexed yet?';
+      if (body.results.length) results.append(el('h2', '', 'Knowledge base'));
       for (const hit of body.results) {
         const card = el('article');
         card.append(
@@ -67,6 +70,12 @@
           el('p', 'meta', [hit.archive || hit.source, 'match ' + Math.round(hit.score * 100) + '%'].join(' · ')),
           el('p', 'text', hit.text),
         );
+        results.append(card);
+      }
+      if (wikipedia.length) results.append(el('h2', '', 'Wikipedia'));
+      for (const hit of wikipedia) {
+        const card = el('article');
+        card.append(el('h2', '', hit.title), el('p', 'text', hit.text));
         results.append(card);
       }
     } catch (error) {
