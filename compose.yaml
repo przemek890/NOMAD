@@ -1,7 +1,15 @@
 name: nomad-box
 
+x-logging: &logging
+  logging:
+    driver: json-file
+    options:
+      max-size: 10m
+      max-file: "3"
+
 services:
   nomad:
+    <<: *logging
     image: ${NOMAD_BOX_IMAGE:-nomad-box:latest}
     container_name: nomad-box
     hostname: nomad-box
@@ -12,6 +20,8 @@ services:
     env_file:
       - path: .env
         required: false
+    environment:
+      NOMAD_SEARCH_URL: http://${NOMAD_HOST:-localhost}:${NOMAD_SEARCH_PORT:-8070}
     extra_hosts:
       - host.docker.internal:host-gateway
     ports:
@@ -27,7 +37,33 @@ services:
       - nomad-engine:/var/lib/docker
       - ./content:/opt/nomad-box/content:ro
 
+  # Knowledge search without the chat model: questions become nomic-embed-text vectors
+  # here (the model NOMAD indexes with), Qdrant in nomad-box returns the closest passages
+  embed:
+    <<: *logging
+    image: ghcr.io/ggml-org/llama.cpp:server
+    container_name: nomad-embed
+    restart: unless-stopped
+    command: [--hf-repo, nomic-ai/nomic-embed-text-v1.5-GGUF, --hf-file, nomic-embed-text-v1.5.f16.gguf,
+              --embeddings, --pooling, mean, --ctx-size, "2048", --ubatch-size, "2048", --host, 0.0.0.0, --port, "8080"]
+    environment:
+      LLAMA_CACHE: /models
+    volumes:
+      - ${NOMAD_DATA_DIR:-./data}/models:/models
+
+  search:
+    <<: *logging
+    image: python:3.13-alpine
+    container_name: nomad-search
+    restart: unless-stopped
+    command: [python, /app/server.py]
+    ports:
+      - ${NOMAD_SEARCH_PORT:-8070}:8070
+    volumes:
+      - ./search:/app:ro
+
   proxy:
+    <<: *logging
     image: caddy:2.10-alpine
     container_name: nomad-proxy
     profiles:

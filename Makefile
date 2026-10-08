@@ -85,11 +85,12 @@ trust: ## Trust the HTTPS certificate system-wide (once, asks for your password)
 	@if cmp -s $(ROOT_CA).new $(ROOT_CA); then rm $(ROOT_CA).new; \
 	else echo "Trusting the HTTPS certificate"; $(call trust_ca,$(ROOT_CA).new) && mv $(ROOT_CA).new $(ROOT_CA); fi
 
-export: ## Save the image to dist/nomad-box.tar.gz (to move it to another machine)
+export: ## Save all images to dist/nomad-box.tar.gz (to move them to another machine)
 	@mkdir -p dist
-	docker save $(NOMAD_BOX_IMAGE) | gzip > $(ARCHIVE)
+	docker compose --profile '*' pull --ignore-pull-failures --quiet
+	docker save $$(docker compose --profile '*' config --images) | gzip > $(ARCHIVE)
 
-import: ## Load the image from dist/nomad-box.tar.gz
+import: ## Load the images from dist/nomad-box.tar.gz
 	gunzip --stdout $(ARCHIVE) | docker load
 
 prune: ## Clear the build cache (frees several GB after make build)

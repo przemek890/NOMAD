@@ -85,7 +85,8 @@ configure() {
     if [[ $OS == Darwin ]] || is_wsl; then
       cp "$DIR/.env.example" "$env"
     else
-      : >"$env"
+      # The address other devices use, e.g. for the Knowledge Search tile
+      echo "NOMAD_HOST=$(hostname).local" >"$env"
     fi
   fi
   local name

@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Knowledge Search</title>
+<style>
+  :root { --bg: #f7f5ef; --card: #fff; --text: #2b2b24; --muted: #6b6a5e; --accent: #424420; --line: #dedbcf; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #1d1d19; --card: #27271f; --text: #ecebe3; --muted: #a9a798; --accent: #b9bd7a; --line: #3a3a30; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 system-ui, sans-serif; }
+  main { max-width: 860px; margin: 0 auto; padding: 32px 16px; }
+  h1 { margin: 0 0 4px; font-size: 1.6rem; }
+  p.lead { margin: 0 0 20px; color: var(--muted); }
+  form { display: flex; gap: 8px; }
+  input { flex: 1; min-width: 0; padding: 12px 14px; font: inherit; color: inherit; background: var(--card);
+          border: 1px solid var(--line); border-radius: 8px; }
+  button { padding: 12px 20px; font: inherit; font-weight: 600; color: var(--bg); background: var(--accent);
+           border: 0; border-radius: 8px; cursor: pointer; }
+  #status { margin: 16px 0; color: var(--muted); }
+  article { margin: 0 0 12px; padding: 16px; background: var(--card); border: 1px solid var(--line); border-radius: 8px; }
+  article h2 { margin: 0 0 4px; font-size: 1.05rem; }
+  .meta { margin: 0 0 8px; font-size: .85rem; color: var(--muted); }
+  .text { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Knowledge Search</h1>
+  <p class="lead">Finds the passages of the NOMAD knowledge base closest in meaning to your question.
+    Works without the AI chat model. Ask in the language of your documents (most indexed sources are English).</p>
+  <form id="form">
+    <input id="q" name="q" type="search" placeholder="e.g. how to stop heavy bleeding" autofocus required>
+    <button>Search</button>
+  </form>
+  <div id="status"></div>
+  <section id="results"></section>
+</main>
+<script>
+  const form = document.getElementById('form');
+  const status = document.getElementById('status');
+  const results = document.getElementById('results');
+
+  function el(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text) node.textContent = text;
+    return node;
+  }
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const q = document.getElementById('q').value.trim();
+    status.textContent = 'Searching…';
+    results.replaceChildren();
+    try {
+      const response = await fetch('/api/search?' + new URLSearchParams({ q, limit: 8 }));
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error);
+      status.textContent = body.results.length ? '' : 'Nothing found. Is the knowledge base indexed yet?';
+      for (const hit of body.results) {
+        const card = el('article');
+        card.append(
+          el('h2', '', hit.title || hit.source),
+          el('p', 'meta', [hit.archive || hit.source, 'match ' + Math.round(hit.score * 100) + '%'].join(' · ')),
+          el('p', 'text', hit.text),
+        );
+        results.append(card);
+      }
+    } catch (error) {
+      status.textContent = error.message;
+    }
+  });
+</script>
+</body>
+</html>
