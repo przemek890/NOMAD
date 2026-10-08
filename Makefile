@@ -13,7 +13,7 @@ CA_PATH := /data/caddy/pki/authorities/local/root.crt
 URL := $(if $(NOMAD_DOMAIN),https://$(NOMAD_DOMAIN),http://localhost:$(or $(NOMAD_PORT),8080))
 IP ?= 127.0.0.1
 
-.PHONY: help init builder images box build image up down restart logs logs-admin status preload shell hosts trust export import prune clean
+.PHONY: help init builder images box build refresh image up down restart logs logs-admin status preload shell hosts trust export import prune clean
 
 help: ## Show available commands
 	@grep -E '^[a-z-]+:.*## ' $(firstword $(MAKEFILE_LIST)) | awk 'BEGIN {FS = ":.*## "} {printf "  \033[36m%-11s\033[0m %s\n", $$1, $$2}'
@@ -34,8 +34,15 @@ box: builder ## Build the nomad-box image with the NOMAD images inside
 
 build: images box ## Full build (images + box)
 
+refresh: ## Put changed box/ scripts into the existing image and restart (no full rebuild)
+	printf 'FROM %s\nCOPY box/compose/ /opt/nomad-box/compose/\nCOPY box/lib/ /usr/local/lib/nomad-box/\nCOPY --chmod=0755 box/bin/ /usr/local/bin/\n' \
+		$(NOMAD_BOX_IMAGE) | docker build --quiet --tag $(NOMAD_BOX_IMAGE) --file - .
+	docker compose up --detach --wait
+
 image:
 	@docker image inspect $(NOMAD_BOX_IMAGE) >/dev/null 2>&1 || $(MAKE) --no-print-directory build prune
+	@docker image inspect $$(docker compose config --images embed) >/dev/null 2>&1 \
+		|| { docker compose build embed && docker builder prune --all --force >/dev/null; }
 
 up: init image ## Build if needed and start NOMAD with the content from content/ (default: make)
 	docker compose up --detach --wait
@@ -80,15 +87,17 @@ trust: ## Trust the HTTPS certificate system-wide (once, asks for your password)
 	@if cmp -s $(ROOT_CA).new $(ROOT_CA); then rm $(ROOT_CA).new; \
 	else echo "Trusting the HTTPS certificate"; $(call trust_ca,$(ROOT_CA).new) && mv $(ROOT_CA).new $(ROOT_CA); fi
 
-export: ## Save the image to dist/nomad-box.tar.gz (to move it to another machine)
+export: ## Save all images to dist/nomad-box.tar.gz (to move them to another machine)
 	@mkdir -p dist
-	docker save $(NOMAD_BOX_IMAGE) | gzip > $(ARCHIVE)
+	docker compose --profile '*' pull --ignore-pull-failures --quiet
+	docker save $$(docker compose --profile '*' config --images) | gzip > $(ARCHIVE)
 
-import: ## Load the image from dist/nomad-box.tar.gz
+import: ## Load the images from dist/nomad-box.tar.gz
 	gunzip --stdout $(ARCHIVE) | docker load
 
-prune: ## Clear the build cache (frees several GB after make build)
+prune: ## Clear the build cache and stop the builder (frees several GB and its RAM after make build)
 	docker buildx prune --builder $(BUILDER) --all --force
+	docker buildx stop $(BUILDER)
 
 clean: ## Remove the container and the inner Docker engine (data/ is kept)
 	docker compose down --volumes

@@ -24,7 +24,9 @@ write_config() {
 	}
 	@embed path /api/embed /api/embeddings /v1/embeddings
 	handle @embed {
-		reverse_proxy ${EMBED_OLLAMA}
+		reverse_proxy ${EMBED_OLLAMA} {
+			header_up Host {upstream_hostport}
+		}
 	}
 	handle {
 		reverse_proxy $(llm_upstream) {
@@ -54,7 +56,7 @@ ollama_tags() {
     return
   fi
   embed=$(curl -fs -m 3 "${EMBED_OLLAMA}/api/tags") || embed='{}'
-  respond '200 OK' "$(jq -c --argjson e "$embed" '.models += ($e.models // [] | map(select(.name | contains("embed"))))' <<<"$reply")"
+  respond '200 OK' "$(jq -c --argjson e "$embed" '.models = (.models + ($e.models // [] | map(select(.name | contains("embed")))) | unique_by(.name))' <<<"$reply")"
 }
 
 # OpenAI-compatible list: the server's models plus the embedding model
@@ -63,7 +65,7 @@ openai_models() {
   reply=$(curl -fs -m 3 "$(llm_upstream)/v1/models") || reply='{}'
   embed=$(curl -fs -m 3 "${EMBED_OLLAMA}/v1/models") || embed='{}'
   respond '200 OK' "$(jq -cn --argjson u "$reply" --argjson e "$embed" \
-    '{object: "list", data: (($u.data // []) + ($e.data // [] | map(select(.id | contains("embed")))))}')"
+    '{object: "list", data: (($u.data // []) + ($e.data // [] | map(select(.id | contains("embed")))) | unique_by(.id))}')"
 }
 
 models() {
@@ -78,7 +80,7 @@ models() {
 
 serve() {
   write_config
-  log "Chat LLM: ${NOMAD_LLM_URL}; embeddings: bundled Ollama (${EMBED_MODEL})"
+  log "Chat LLM: ${NOMAD_LLM_URL}; embeddings (${EMBED_MODEL}): ${NOMAD_EMBED_URL:-bundled Ollama}"
   socat "TCP-LISTEN:${MODELS_PORT},bind=127.0.0.1,fork,reuseaddr" EXEC:"nomad-llm models" &
   exec caddy run --adapter caddyfile --config "$CONFIG"
 }

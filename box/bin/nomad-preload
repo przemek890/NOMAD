@@ -13,6 +13,8 @@ readonly KB_DIR="${NOMAD_HOME}/storage/kb_uploads"
 readonly ADMIN_ZIM_DIR=/app/storage/zim
 readonly ADMIN_KB_DIR=/app/storage/kb_uploads
 readonly EMBED_LOCK=/run/nomad-embed.lock
+readonly NOTES_DIR="${NOMAD_HOME}/storage/flatnotes"
+readonly CONTENT_NOTE="${NOTES_DIR}/Downloaded content.md"
 
 items() {
   awk -v kind="$1" '$1 == kind { print $2 }' "$SOURCES"
@@ -52,10 +54,11 @@ add_service() {
 
 add_zim() {
   local url=$1 name=${1##*/}
+  # Only finished files count: a .zim.tmp left by a stalled download must not block a new one
   if [[ $url == *.zim ]]; then
-    exists "${ZIM_DIR}/${name}*" && return
+    exists "${ZIM_DIR}/${name}" && return
   else
-    exists "${ZIM_DIR}/${name}_[0-9][0-9][0-9][0-9]-[0-9][0-9].zim*" && return
+    exists "${ZIM_DIR}/${name}_[0-9][0-9][0-9][0-9]-[0-9][0-9].zim" && return
     name=$(curl -fsSL "${url%/*}/" | grep -oE "${name}_[0-9]{4}-[0-9]{2}\.zim" | sort | tail -n1)
     [[ -n $name ]] || fail "No ZIM file found for ${url}"
     url="${url%/*}/${name}"
@@ -96,8 +99,20 @@ manual_ingest() {
   api PATCH /system/settings --data '{"key": "rag.defaultIngestPolicy", "value": "Manual"}' >/dev/null
 }
 
+# Remote embeddings (NOMAD_EMBED_URL): no bundled Ollama, which saves ~3 GB of disk and the RAM
+setup_remote_embeddings() {
+  api POST /ollama/configure-remote --data "$(json --arg u "$LLM_ROUTER_URL" '{remoteUrl: $u}')" >/dev/null \
+    || fail "Could not connect NOMAD to ${NOMAD_LLM_URL}. Is the LLM server running?"
+  curl -fs -m 5 "${EMBED_OLLAMA}/api/tags" | jq -e --arg m "$EMBED_MODEL" '.models[] | select(.name == $m)' >/dev/null \
+    || log "No ${EMBED_MODEL} at ${NOMAD_EMBED_URL}; run there: ollama pull ${EMBED_MODEL}"
+}
+
 # The bundled Ollama only computes embeddings; chat goes through nomad-llm to NOMAD_LLM_URL
 setup_ai() {
+  if [[ -n ${NOMAD_EMBED_URL:-} ]]; then
+    setup_remote_embeddings
+    return
+  fi
   add_service nomad_ollama
   api PATCH /system/settings --data "$(json --arg u "$LLM_ROUTER_URL" '{key: "ai.remoteOllamaUrl", value: $u}')" >/dev/null
   curl -fs -m 5 "$(llm_upstream)/v1/models" >/dev/null \
@@ -144,6 +159,7 @@ embed_planned() {
   local source state code pending
   local -A tries=() noted=()
   while :; do
+    write_content_note || true
     pending=0
     while IFS= read -r source; do
       if [[ $source == \?* ]]; then
@@ -178,6 +194,68 @@ embed_planned() {
   done
 }
 
+file_size() {
+  awk -v b="$(stat -c %s "$1")" 'BEGIN { if (b >= 1e9) printf "%.1f GB", b / 1e9; else printf "%d MB", b / 1e6 }'
+}
+
+zim_title() {
+  grep -o "path=\"/data/${1}\" title=\"[^\"]*\"" "${ZIM_DIR}/kiwix-library.xml" 2>/dev/null | sed "s/.*title=\"//; s/\"$//; s/&apos;/'/g; s/&quot;/\"/g; s/&amp;/\\&/g"
+}
+
+# What the AI assistant does with a file, from NOMAD's knowledge base state
+ai_state() {
+  case $(awk -F'\t' -v n="$2" '$1 == n { print $2 }' <<<"$1") in
+    indexed) echo searchable ;;
+    '' | browse_only | pending_decision) echo "browse only" ;;
+    *) echo "being indexed" ;;
+  esac
+}
+
+# A note in Notes (Flatnotes) listing what is downloaded; rewritten only when it changes
+write_content_note() {
+  [[ -d $NOTES_DIR ]] || return 0
+  local states file name tmp=${CONTENT_NOTE}.tmp
+  states=$(api GET /rag/files | jq -r '.files[] | "\(.source | split("/") | last)\t\(.state)"') || states=''
+  {
+    printf '# Downloaded content\n\nUpdated by NOMAD Box. What gets downloaded: content/sources.txt.\n'
+    printf '\n## Library\n\n| Title | File | Size | AI assistant |\n|---|---|---|---|\n'
+    for file in "$ZIM_DIR"/*.zim; do
+      [[ -f $file ]] || continue
+      name=${file##*/}
+      printf '| %s | %s | %s | %s |\n' "$(zim_title "$name")" "$name" "$(file_size "$file")" "$(ai_state "$states" "$name")"
+    done
+    for file in "$ZIM_DIR"/*.zim.tmp; do
+      if [[ -f $file ]]; then printf '| | %s | downloading | |\n' "${file##*/}"; fi
+    done
+    printf '\n## Maps\n\n'
+    for file in "$MAPS_DIR"/pmtiles/*.pmtiles; do
+      if [[ -f $file ]]; then printf -- '- %s (%s)\n' "${file##*/}" "$(file_size "$file")"; fi
+    done
+    printf '\n## Your documents (content/knowledge)\n\n'
+    find "$KB_DIR" -type f ! -name '.*' | while IFS= read -r file; do
+      printf -- '- %s (%s)\n' "${file#"$KB_DIR"/}" "$(ai_state "$states" "${file##*/}")"
+    done
+  } >"$tmp"
+  if cmp -s "$tmp" "$CONTENT_NOTE"; then
+    rm "$tmp"
+  else
+    chown "$(stat -c %u:%g "$NOTES_DIR")" "$tmp"
+    mv "$tmp" "$CONTENT_NOTE"
+  fi
+}
+
+# Dashboard tile for the knowledge search page (compose service "search"): created, or
+# updated when it exists (NOMAD names it nomad_link_ + the name), e.g. after NOMAD_HOST changed
+add_search_link() {
+  [[ -n ${NOMAD_SEARCH_URL:-} ]] || return 0
+  local tile
+  tile=$(json --arg u "$NOMAD_SEARCH_URL" '{friendly_name: "Knowledge Search", url: $u, icon: "IconSearch",
+    description: "Find passages in the knowledge base, also without the AI chat model"}')
+  api POST /system/services/links --data "$tile" >/dev/null 2>&1 \
+    || api PUT /system/services/links --data "$(jq -c '.service_name = "nomad_link_knowledge_search"' <<<"$tile")" >/dev/null \
+    || log "✗ Could not add the Knowledge Search tile"
+}
+
 main() {
   wait_for 600 api GET /health || fail "Command Center is not running. Run: make up"
   [[ -f $SOURCES ]] || fail "${SOURCES} is missing"
@@ -189,12 +267,14 @@ main() {
     done
   done
   (setup_ai) || log "✗ Could not set up the AI assistant"
+  add_search_link
   [[ -d $KNOWLEDGE_DIR ]] && { (sync_knowledge) || log "✗ Could not sync the knowledge base"; }
   api POST /zim/rescan-library >/dev/null 2>&1 || true
   (
     flock -n 9 || exit 0
     embed_planned
   ) 9>"$EMBED_LOCK" >/proc/1/fd/1 2>&1 &
+  (write_content_note) || log "✗ Could not write the note about downloaded content"
   log "Content from content/sources.txt is installed or downloading in the background: ${NOMAD_URL}"
 }
 

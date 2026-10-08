@@ -5,7 +5,9 @@ source /usr/local/lib/nomad-box/common.sh
 
 start_engine() {
   log "Starting the inner Docker Engine"
-  dockerd-entrypoint.sh dockerd --host=unix:///var/run/docker.sock >/var/log/dockerd.log 2>&1 &
+  # At most 30 MB of logs per container, also for the apps NOMAD starts itself (busy job logs fill a small disk)
+  dockerd-entrypoint.sh dockerd --host=unix:///var/run/docker.sock --log-opt max-size=10m --log-opt max-file=3 \
+    >/var/log/dockerd.log 2>&1 &
   ENGINE_PID=$!
   trap stop_all TERM INT
   wait_for 120 docker info || fail "Docker Engine did not start. Is the container running with --privileged? See /var/log/dockerd.log"
