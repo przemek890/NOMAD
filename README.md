@@ -47,6 +47,13 @@ an address (DHCP) and shares its internet connection.
 
 4. Open `http://<mini PC address>:8080`.
 
+### A small mini PC (e.g. HP t630, 4 GB RAM)
+
+Use Debian without a desktop instead of Windows: Docker runs natively and ~3 GB of RAM stays free.
+`minipc/preseed.cfg` installs Debian 13 unattended (it **erases the whole disk**). After the install run
+`sudo minipc/tune.sh` on the mini PC: compressed RAM swap (zram), the name `nomad.local`
+and no "ACPI BIOS Error" messages on the screen of HP thin clients.
+
 ## Everyday use
 
 | Command | What it does |
