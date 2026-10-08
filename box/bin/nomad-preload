@@ -52,10 +52,11 @@ add_service() {
 
 add_zim() {
   local url=$1 name=${1##*/}
+  # Only finished files count: a .zim.tmp left by a stalled download must not block a new one
   if [[ $url == *.zim ]]; then
-    exists "${ZIM_DIR}/${name}*" && return
+    exists "${ZIM_DIR}/${name}" && return
   else
-    exists "${ZIM_DIR}/${name}_[0-9][0-9][0-9][0-9]-[0-9][0-9].zim*" && return
+    exists "${ZIM_DIR}/${name}_[0-9][0-9][0-9][0-9]-[0-9][0-9].zim" && return
     name=$(curl -fsSL "${url%/*}/" | grep -oE "${name}_[0-9]{4}-[0-9]{2}\.zim" | sort | tail -n1)
     [[ -n $name ]] || fail "No ZIM file found for ${url}"
     url="${url%/*}/${name}"
