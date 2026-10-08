@@ -39,10 +39,16 @@ NOMAD otwierasz w przeglądarce na komputerze: **http://nomad.local:8080**.
    - **Windows:** połącz się z Wi‑Fi, kliknij dwa razy `network\start.cmd` i potwierdź okno administratora
 
    Na końcu zobaczysz adres mini PC, np. `10.77.0.11`.
-4. **Na mini PC** (Linux, np. Debian) wpisz:
+4. **Na komputerze** skopiuj projekt na mini PC i zainstaluj go tam (Terminal na macOS / Linux, PowerShell na Windows,
+   w folderze, w którym leży folder `NOMAD`; `użytkownik` to Twój login na mini PC, adres z kroku 3):
 
    ```bash
-   curl -fsSL https://raw.githubusercontent.com/przemek890/NOMAD/main/install.sh | NOMAD_LLM_URL=http://10.77.0.1:11434 NOMAD_EMBED_URL=http://10.77.0.1:11434 bash
+   scp -r NOMAD użytkownik@10.77.0.11:
+   ssh użytkownik@10.77.0.11
+   ```
+
+   ```bash
+   cd NOMAD && NOMAD_LLM_URL=http://10.77.0.1:11434 NOMAD_EMBED_URL=http://10.77.0.1:11434 bash install.sh
    ```
 
 5. **Na komputerze** otwórz **http://nomad.local:8080** (albo `http://<adres mini PC>:8080`).
