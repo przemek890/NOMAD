@@ -45,7 +45,10 @@ an address (DHCP) and shares its internet connection.
    NOMAD_LLM_URL=http://10.77.0.1:11434 bash install.sh
    ```
 
-4. Open `http://<mini PC address>:8080`.
+4. Open **http://nomad.local:8080** (or `http://<mini PC address>:8080`).
+
+After a restart of the computer running the model, run `network/start.sh` (macOS, Linux): it starts
+Ollama if needed, the cable network and the bridge. The mini PC starts NOMAD by itself.
 
 ### A small mini PC (e.g. HP t630, 4 GB RAM)
 
