@@ -45,6 +45,24 @@ remove_old_images() {
   done
 }
 
+# NOMAD's AI benchmark is fixed to llama3.1:8b and downloads it. A copy of that file in which the
+# model comes from NOMAD_BENCHMARK_MODEL is mounted into nomad_admin, set to the chat model of
+# the LLM server: NOMAD_CHAT_MODEL, or the first chat model the server lists. If a NOMAD update
+# changes the line, the copy stays unchanged and NOMAD behaves as shipped.
+readonly ADMIN_PATCH="${NOMAD_HOME}/patches/benchmark_service.js"
+
+patch_admin() {
+  mkdir -p "${ADMIN_PATCH%/*}"
+  docker run --rm --entrypoint cat "$NOMAD_ADMIN_IMAGE" /app/app/services/benchmark_service.js \
+    | sed "s/^const AI_BENCHMARK_MODEL = 'llama3.1:8b';/const AI_BENCHMARK_MODEL = process.env.NOMAD_BENCHMARK_MODEL || 'llama3.1:8b';/" \
+      >"${ADMIN_PATCH}.tmp"
+  mv "${ADMIN_PATCH}.tmp" "$ADMIN_PATCH"
+  grep -q NOMAD_BENCHMARK_MODEL "$ADMIN_PATCH" || log "AI benchmark: NOMAD changed; it uses its own model again"
+  : "${NOMAD_CHAT_MODEL:=$(curl -fs -m 5 "$(llm_upstream)/api/tags" | jq -r '[.models[].name | select(contains("embed") | not)][0] // empty')}"
+  export NOMAD_BENCHMARK_MODEL=${NOMAD_CHAT_MODEL:-}
+  log "AI benchmark model: ${NOMAD_BENCHMARK_MODEL:-llama3.1:8b (LLM server not reachable)}"
+}
+
 ensure_secrets() {
   mkdir -p "${NOMAD_HOME}"/{storage/logs,storage/kb_uploads,mysql,redis}
   [[ -s $SECRETS_FILE ]] && return
@@ -66,6 +84,7 @@ main() {
   start_engine
   load_images
   ensure_secrets
+  patch_admin
   nomad-llm serve &
   nomad-domain caddyfile
   log "Starting Project NOMAD ${NOMAD_VERSION}"

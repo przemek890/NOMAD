@@ -16,7 +16,10 @@ services:
     volumes:
       - ${NOMAD_HOME}/storage:/app/storage
       - /var/run/docker.sock:/var/run/docker.sock
+      # The AI benchmark uses the chat model instead of downloading llama3.1:8b (nomad-box patch_admin)
+      - ${NOMAD_HOME}/patches/benchmark_service.js:/app/app/services/benchmark_service.js:ro
     environment:
+      NOMAD_BENCHMARK_MODEL: ${NOMAD_BENCHMARK_MODEL:-}
       NODE_ENV: production
       NOMAD_STORAGE_PATH: ${NOMAD_HOME}/storage
       PORT: 8080
