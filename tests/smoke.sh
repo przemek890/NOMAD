@@ -38,8 +38,9 @@ command_center() {
   get "$NOMAD/api/health" | jq -er '.status == "ok"' >/dev/null
 }
 
+# Information only: NOMAD is made to work offline
 internet() {
-  [[ $(get "$NOMAD/api/system/internet-status") == true ]] || { echo "no internet (offline use still works)"; return 1; }
+  [[ $(get "$NOMAD/api/system/internet-status") == true ]] && echo online || echo "offline (fine: NOMAD works without internet)"
 }
 
 system_info() {
@@ -58,7 +59,8 @@ library() {
   local book
   book=$(get "$KIWIX/catalog/v2/entries?count=100" | grep -o 'href="/content/wikipedia[^"]*"' | cut -d/ -f3 | tr -d '"' | sort -r | head -1)
   [[ -n $book ]] || { echo "no Wikipedia in the library"; return 1; }
-  get "$KIWIX/search?content=${book}&pattern=Warszawa" | grep -q "href=\"/content/${book}/" || { echo "no results in ${book}"; return 1; }
+  # 60 s: the first search after a pause reads the index of a large ZIM from a slow disk
+  get "$KIWIX/search?content=${book}&pattern=Warszawa" 60 | grep -q "href=\"/content/${book}/" || { echo "no results in ${book}"; return 1; }
   echo "$book"
 }
 
@@ -74,7 +76,7 @@ maps() {
 }
 
 downloaded_note() {
-  get "$NOTES/api/notes/Downloaded%20content" | jq -er '.content | select(test("## Library")) | "lists \([scan("\\.zim ")] | length) library files"'
+  get "$NOTES/api/notes/Downloaded%20content" | jq -er '.content | select(test("## Biblioteka")) | "lists \([scan("\\.zim ")] | length) library files"'
 }
 
 ai_connected() {

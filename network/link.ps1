@@ -6,6 +6,7 @@
 #   ./nomad stop             undo the network and the bridge
 #   ./nomad status           network, mini PC address, bridge
 #   ./nomad test [address]   check a running NOMAD (needs bash: Git for Windows or WSL)
+#   ./nomad report [address] benchmarks into content/notes (needs bash too)
 #   single steps: up, down, bridge-start, bridge-stop
 #
 # Uses Internet Connection Sharing (needs a working internet adapter, e.g. Wi-Fi).
@@ -13,7 +14,7 @@
 [CmdletBinding(PositionalBinding = $false)]
 param(
   [Parameter(Position = 0)]
-  [ValidateSet('start', 'stop', 'status', 'test', 'up', 'down', 'bridge-start', 'bridge-stop')]
+  [ValidateSet('start', 'stop', 'status', 'test', 'report', 'up', 'down', 'bridge-start', 'bridge-stop')]
   [string]$Action = 'start',
   [Parameter(Position = 1)]
   [string]$Address = 'nomad.local',
@@ -156,13 +157,13 @@ function Stop-All {
   Down
 }
 
-# The same smoke test as on macOS and Linux, through bash from Git for Windows or WSL
-function Test-Nomad {
+# The same test scripts as on macOS and Linux, through bash from Git for Windows or WSL
+function Invoke-Test($Script) {
   if (-not (Get-Command bash -ErrorAction SilentlyContinue)) {
-    Die 'The test needs bash: install Git for Windows (git-scm.com) or WSL, or run tests/smoke.sh on the mini PC'
+    Die "This needs bash: install Git for Windows (git-scm.com) or WSL, or run $Script on the mini PC"
   }
   Push-Location (Split-Path $PSScriptRoot)
-  try { bash tests/smoke.sh $Address } finally { Pop-Location }
+  try { bash $Script $Address } finally { Pop-Location }
   exit $LASTEXITCODE
 }
 
@@ -184,7 +185,8 @@ function Status {
 switch ($Action) {
   'start' { Start-All }
   'stop' { Stop-All }
-  'test' { Test-Nomad }
+  'test' { Invoke-Test tests/smoke.sh }
+  'report' { Invoke-Test tests/benchmark.sh }
   'up' { Up }
   'down' { Down }
   'status' { Status }

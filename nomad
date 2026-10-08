@@ -5,6 +5,7 @@
 #   ./nomad stop             undo the cable network and the bridge
 #   ./nomad status           network, mini PC address, bridge
 #   ./nomad test [address]   check a running NOMAD (default: nomad.local)
+#   ./nomad report [address] benchmarks into content/notes (Benchmarks, Downloaded content)
 set -Eeuo pipefail
 
 readonly HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
@@ -20,8 +21,9 @@ case ${1:-start} in
     exec "$HERE/network/llm-bridge.sh" status
     ;;
   test) exec "$HERE/tests/smoke.sh" "${2:-nomad.local}" "${@:3}" ;;
+  report) exec "$HERE/tests/benchmark.sh" "${2:-nomad.local}" ;;
   *)
-    echo "Usage: ./nomad start|stop|status|test [address]" >&2
+    echo "Usage: ./nomad start|stop|status|test|report [address]" >&2
     exit 1
     ;;
 esac

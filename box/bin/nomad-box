@@ -60,7 +60,8 @@ main() {
   nomad-domain caddyfile
   log "Starting Project NOMAD ${NOMAD_VERSION}"
   stack up --detach --remove-orphans
-  docker image prune --all --force >/dev/null
+  # Only dangling layers: images of apps that are not running (e.g. the benchmark) must stay for offline use
+  docker image prune --force >/dev/null
   if wait_for 600 curl -fsS "${API_URL}/health"; then
     nomad-domain links || log "Could not set the HTTPS app links"
     log "Command Center ready: ${NOMAD_URL}"

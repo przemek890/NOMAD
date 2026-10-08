@@ -83,6 +83,7 @@ Działa tak samo na macOS, Linux i Windows (PowerShell):
 | `./nomad start` | uruchamia model, sieć na kablu i udostępnia model mini PC |
 | `./nomad status` | pokazuje sieć, adres mini PC i model |
 | `./nomad test` | sprawdza, czy NOMAD działa (na Windows potrzebny [Git](https://git-scm.com)) |
+| `./nomad report` | benchmarki systemu i AI, zapisuje je w `content/notes/Benchmarks.md` (~10 min) |
 | `./nomad stop` | wyłącza sieć na kablu i udostępnianie modelu |
 
 Model jest dostępny tylko na kablu. Ustawienia Twojego komputera (np. własna ścieżka do Ollamy lub Caddy) wpisz w `network/local.env`, wzór: `network/local.env.example`.
@@ -93,7 +94,8 @@ Model jest dostępny tylko na kablu. Ustawienia Twojego komputera (np. własna �
 - **Maps** – mapa Polski offline.
 - **AI Assistant** – czat odpowiadający na podstawie bazy wiedzy (wymaga modelu na komputerze).
 - **Knowledge Search** (kafelek, port 8070) – znajduje w bazie wiedzy fragmenty najbliższe znaczeniem pytaniu, **bez modelu AI**. Źródła są głównie angielskie, więc pytaj po angielsku.
-- **Notes** – notatka **Downloaded content** z listą pobranych materiałów, aktualizuje się sama.
+- **Notes** – notatki z repozytorium (`content/notes`): **Benchmarks** (jak sprawdzić, że działa, i wyniki pomiarów)
+  oraz **Downloaded content** (lista pobranych materiałów, w NOMAD aktualizuje się sama).
 
 Lista pobieranych materiałów: `content/sources.txt`. Własne dokumenty dla AI wrzuć do `content/knowledge/`.
 

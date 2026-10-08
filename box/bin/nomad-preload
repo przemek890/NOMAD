@@ -6,6 +6,7 @@ source "$SECRETS_FILE"
 
 readonly SOURCES=/opt/nomad-box/content/sources.txt
 readonly KNOWLEDGE_DIR=/opt/nomad-box/content/knowledge
+readonly REPO_NOTES_DIR=/opt/nomad-box/content/notes
 readonly ZIM_DIR="${NOMAD_HOME}/storage/zim"
 readonly MAPS_DIR="${NOMAD_HOME}/storage/maps"
 readonly KB_DIR="${NOMAD_HOME}/storage/kb_uploads"
@@ -205,9 +206,9 @@ zim_title() {
 # What the AI assistant does with a file, from NOMAD's knowledge base state
 ai_state() {
   case $(awk -F'\t' -v n="$2" '$1 == n { print $2 }' <<<"$1") in
-    indexed) echo searchable ;;
-    '' | browse_only | pending_decision) echo "browse only" ;;
-    *) echo "being indexed" ;;
+    indexed) echo tak ;;
+    '' | browse_only | pending_decision) echo "nie, tylko do czytania" ;;
+    *) echo "w trakcie indeksowania" ;;
   esac
 }
 
@@ -217,21 +218,21 @@ write_content_note() {
   local states file name tmp=${CONTENT_NOTE}.tmp
   states=$(api GET /rag/files | jq -r '.files[] | "\(.source | split("/") | last)\t\(.state)"') || states=''
   {
-    printf '# Downloaded content\n\nUpdated by NOMAD Box. What gets downloaded: content/sources.txt.\n'
-    printf '\n## Library\n\n| Title | File | Size | AI assistant |\n|---|---|---|---|\n'
+    printf '# Downloaded content\n\nPobrane materiały. NOMAD Box aktualizuje tę notatkę sam; co pobierać: content/sources.txt.\n'
+    printf '\n## Biblioteka\n\n| Tytuł | Plik | Rozmiar | Przeszukuje AI |\n|---|---|---|---|\n'
     for file in "$ZIM_DIR"/*.zim; do
       [[ -f $file ]] || continue
       name=${file##*/}
       printf '| %s | %s | %s | %s |\n' "$(zim_title "$name")" "$name" "$(file_size "$file")" "$(ai_state "$states" "$name")"
     done
     for file in "$ZIM_DIR"/*.zim.tmp; do
-      if [[ -f $file ]]; then printf '| | %s | downloading | |\n' "${file##*/}"; fi
+      if [[ -f $file ]]; then printf '| | %s | pobieranie | |\n' "${file##*/}"; fi
     done
-    printf '\n## Maps\n\n'
+    printf '\n## Mapy\n\n'
     for file in "$MAPS_DIR"/pmtiles/*.pmtiles; do
       if [[ -f $file ]]; then printf -- '- %s (%s)\n' "${file##*/}" "$(file_size "$file")"; fi
     done
-    printf '\n## Your documents (content/knowledge)\n\n'
+    printf '\n## Twoje dokumenty (content/knowledge)\n\n'
     find "$KB_DIR" -type f ! -name '.*' | while IFS= read -r file; do
       printf -- '- %s (%s)\n' "${file#"$KB_DIR"/}" "$(ai_state "$states" "${file##*/}")"
     done
@@ -242,6 +243,21 @@ write_content_note() {
     chown "$(stat -c %u:%g "$NOTES_DIR")" "$tmp"
     mv "$tmp" "$CONTENT_NOTE"
   fi
+}
+
+# Notes from the repository (content/notes) in Notes; the repository is the source, so they are
+# replaced when they differ. "Downloaded content" there is a snapshot: NOMAD writes its own live one.
+sync_notes() {
+  [[ -d $NOTES_DIR ]] || return 0
+  local file target owner
+  owner=$(stat -c %u:%g "$NOTES_DIR")
+  for file in "$REPO_NOTES_DIR"/*.md; do
+    target="${NOTES_DIR}/${file##*/}"
+    [[ -f $file && $target != "$CONTENT_NOTE" ]] || continue
+    cmp -s "$file" "$target" && continue
+    cp "$file" "$target"
+    chown "$owner" "$target"
+  done
 }
 
 # Dashboard tile for the knowledge search page (compose service "search"): created, or
@@ -275,6 +291,7 @@ main() {
     embed_planned
   ) 9>"$EMBED_LOCK" >/proc/1/fd/1 2>&1 &
   (write_content_note) || log "✗ Could not write the note about downloaded content"
+  (sync_notes) || log "✗ Could not copy the notes from content/notes"
   log "Content from content/sources.txt is installed or downloading in the background: ${NOMAD_URL}"
 }
 
