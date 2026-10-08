@@ -1,3 +1,5 @@
 * text=auto eol=lf
 *.tar binary
 *.gz binary
+*.cmd eol=crlf
+*.ps1 eol=crlf

@@ -2,7 +2,7 @@
 
 Offline encyclopedia, maps and AI assistant ([Project NOMAD](https://www.projectnomad.us)) that runs on your own computer.
 
-**You need:** macOS, Windows or Linux (also a mini PC or Raspberry Pi 5), 4 GB RAM, 40 GB of free disk space and internet for the first start.
+**You need:** macOS, Windows or Linux (also a mini PC or Raspberry Pi 5), 4 GB RAM, 30 GB of free disk space and internet for the first start.
 
 ## Install
 
@@ -19,23 +19,33 @@ Offline encyclopedia, maps and AI assistant ([Project NOMAD](https://www.project
 
 4. Open the address shown at the end, e.g. **http://localhost:8080**.
 
-## AI chat on a Mac, NOMAD on a mini PC
+## AI chat on your computer, NOMAD on a mini PC
 
-1. Connect the mini PC to the Mac with an Ethernet cable.
-2. On the Mac, turn on **System Settings > General > Sharing > Internet Sharing** (from Wi-Fi to Ethernet).
-3. On the Mac, start [Ollama](https://ollama.com) so the mini PC can reach it:
+The model runs on your computer (Ollama on `127.0.0.1:11434`), NOMAD runs on a mini PC connected
+to it with an Ethernet cable only. Your computer is `10.77.0.1` on the cable, gives the mini PC
+an address (DHCP) and shares its internet connection.
+
+1. Connect the mini PC with an Ethernet cable (the mini PC uses DHCP, the default).
+2. Set up the cable network and make Ollama reachable on the cable only:
+
+   | | macOS / Linux (Terminal) | Windows (Command Prompt or PowerShell) |
+   |---|---|---|
+   | network | `sudo network/link.sh up` | `network\link.cmd up` |
+   | model | `network/llm-bridge.sh start` | `network\link.cmd bridge-start` |
+   | mini PC address | `network/link.sh status` | `network\link.cmd status` |
+   | undo | `network/llm-bridge.sh stop`, `sudo network/link.sh down` | `network\link.cmd bridge-stop`, `network\link.cmd down` |
+
+   On Windows confirm the Administrator prompt; the result shows in the new window. Windows shares
+   an existing internet connection (e.g. Wi-Fi), so connect to one first.
+   On macOS run both again after every restart. `llm-bridge.sh` needs [Caddy](https://caddyserver.com/docs/install).
+
+3. Copy the project folder to the mini PC and run in it (a Windows mini PC: in the **Ubuntu** app, see Install):
 
    ```bash
-   OLLAMA_HOST=0.0.0.0 ollama serve
+   NOMAD_LLM_URL=http://10.77.0.1:11434 bash install.sh
    ```
 
-4. Copy the project folder to the mini PC and run in it:
-
-   ```bash
-   NOMAD_LLM_URL=http://192.168.2.1:11434 bash install.sh
-   ```
-
-5. On the Mac, open the address shown at the end.
+4. Open `http://<mini PC address>:8080`.
 
 ## Everyday use
 
