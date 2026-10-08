@@ -26,7 +26,7 @@ init: .env ## Create .env from the template
 builder:
 	@docker buildx inspect $(BUILDER) >/dev/null 2>&1 || docker buildx create --name $(BUILDER) --driver docker-container >/dev/null
 
-images: builder ## Build NOMAD images into .build/images (PLATFORM=linux/arm64 for another architecture)
+images: builder ## Build NOMAD images into .build/images
 	$(BAKE) images
 
 box: builder ## Build the nomad-box image with the NOMAD images inside
@@ -35,7 +35,7 @@ box: builder ## Build the nomad-box image with the NOMAD images inside
 build: images box ## Full build (images + box)
 
 image:
-	@docker image inspect $(NOMAD_BOX_IMAGE) >/dev/null 2>&1 || $(MAKE) build
+	@docker image inspect $(NOMAD_BOX_IMAGE) >/dev/null 2>&1 || $(MAKE) --no-print-directory build prune
 
 up: init image ## Build if needed and start NOMAD with the content from content/ (default: make)
 	docker compose up --detach --wait

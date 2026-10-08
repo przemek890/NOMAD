@@ -17,6 +17,9 @@ category agriculture-essential
 # Country maps (ISO code)
 map PL
 
+# Chat model, downloaded to the Ollama at NOMAD_OLLAMA_URL (the Mac) and set as the default
+chat gemma3:4b
+
 # ZIM files indexed for the AI assistant (name without the date); the rest are browse-only.
 # Documents in content/knowledge are always indexed.
 embed nhs.uk_en_medicines

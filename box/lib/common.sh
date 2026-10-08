@@ -5,6 +5,7 @@ readonly API_URL=http://localhost:8080/api
 # LLM router: the bundled Ollama (nomad_ollama) computes embeddings, chat goes to NOMAD_OLLAMA_URL
 readonly LLM_ROUTER_PORT=11435
 readonly LLM_ROUTER_URL="http://host.docker.internal:${LLM_ROUTER_PORT}"
+readonly LLM_ROUTER_LOCAL="http://127.0.0.1:${LLM_ROUTER_PORT}"
 readonly EMBED_OLLAMA=http://127.0.0.1:11434
 readonly EMBED_MODEL=nomic-embed-text:v1.5
 

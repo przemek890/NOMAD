@@ -106,6 +106,26 @@ setup_ai() {
   log "✓ ${EMBED_MODEL}"
 }
 
+chat_model_ready() {
+  curl -fs -m 5 "${LLM_ROUTER_LOCAL}/api/tags" | jq -e --arg m "$1" 'any(.models[]; .name == $m)' >/dev/null
+}
+
+# Chat model from the "chat" entry, pulled through nomad-llm into the Ollama at NOMAD_OLLAMA_URL
+setup_chat() {
+  local model
+  model=$(items chat | head -n1)
+  [[ -n $model ]] || return 0
+  api PATCH /system/settings --data "$(json --arg m "$model" '{key: "chat.lastModel", value: $m}')" >/dev/null
+  if ! curl -fs -m 5 "${LLM_ROUTER_LOCAL}/api/version" >/dev/null; then
+    log "✗ Ollama at ${NOMAD_OLLAMA_URL} is not responding; start it and run: make preload"
+    return 0
+  fi
+  chat_model_ready "$model" && return
+  log "Downloading ${model} to the Ollama at ${NOMAD_OLLAMA_URL}"
+  curl -fsS "${LLM_ROUTER_LOCAL}/api/pull" --data "$(json --arg m "$model" '{model: $m, stream: false}')" >/dev/null
+  log "✓ ${model}"
+}
+
 rag_state() {
   api GET /rag/files | jq -r --arg s "$1" '[.files[] | select(.source == $s) | .state] | first // "new"'
 }
@@ -193,6 +213,7 @@ main() {
     flock -n 9 || exit 0
     embed_planned
   ) 9>"$EMBED_LOCK" >/proc/1/fd/1 2>&1 &
+  (setup_chat) || log "✗ Could not download the chat model"
   log "Content from content/sources.txt is installed or downloading in the background: ${NOMAD_URL}"
 }
 
