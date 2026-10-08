@@ -10,8 +10,8 @@ service nomad_cyberchef
 zim https://download.kiwix.org/zim/wikipedia/wikipedia_pl_all_nopic
 
 # NOMAD collections (Easy Setup): <category>-<tier>; a higher tier includes the lower ones
-category medicine-comprehensive
-category diy-standard
+category medicine-standard
+category diy-essential
 category agriculture-essential
 
 # Country maps (ISO code)
