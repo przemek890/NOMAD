@@ -92,6 +92,22 @@ def _passages(lines):
         yield passage
 
 
+def candidates(kiwix, question, queries=()):
+    """Article paths for the question and queries, those sharing the most words with them first."""
+    name = book(kiwix)
+    if not name:
+        return name, []
+    paths = []
+    for query in [*queries, question]:
+        for path in titles(kiwix, name, query):
+            if path not in paths:
+                paths.append(path)
+    wanted = stems(" ".join([question, *queries]))
+    # Stable sort: equally good titles keep Kiwix's order
+    paths.sort(key=lambda path: -len(stems(path.replace("_", " ")) & wanted))
+    return name, paths
+
+
 def passages(kiwix, question, queries=(), limit=6):
     """The passages closest to the question: [{"title", "text", "score"}], best first.
 
@@ -99,18 +115,9 @@ def passages(kiwix, question, queries=(), limit=6):
     articles and passages count is decided by the words of the question itself, so a wrong
     guess in a query (an invented name) cannot outweigh it.
     """
-    name = book(kiwix)
-    if not name:
-        return []
+    name, paths = candidates(kiwix, question, queries)
     asked = stems(question)
     terms = stems(" ".join(queries))
-    paths = []
-    for query in [*queries, question]:
-        for path in titles(kiwix, name, query):
-            if path not in paths:
-                paths.append(path)
-    # Titles sharing the most words with the question and the queries first (stable: found order)
-    paths.sort(key=lambda path: -len(stems(path.replace("_", " ")) & (asked | terms)))
     found = []
     for rank, path in enumerate(paths[:ARTICLES]):
         title, lines = article(kiwix, name, path)

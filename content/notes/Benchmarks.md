@@ -62,37 +62,38 @@ Potem pokaż, że działa bez internetu i bez AI:
 
 ## Ostatnie wyniki
 
-Zmierzone 2026-10-08 22:02 na `nomad.local`, internet: brak. Polecenie: `./nomad report`.
+Zmierzone 2026-10-08 23:34 na `nomad.local`, internet: jest. Polecenie: `./nomad report`.
 
-Sprzęt: Embedded G-Series GX-420GI Radeon R7E, 4 rdzenie, RAM 3.5 GB (zajęte 2.3 GB), obciążenie CPU 8%.
+Sprzęt: Embedded G-Series GX-420GI Radeon R7E, 4 rdzenie, RAM 3.5 GB (zajęte 2.3 GB), obciążenie CPU 13%.
 
 ### System (benchmark NOMAD)
 
 | NOMAD score | CPU 1 wątek | CPU wszystkie wątki | RAM | Dysk odczyt | Dysk zapis |
 |---|---|---|---|---|---|
-| 20.95 | 355.91 zdarzeń/s | 1112.02 zdarzeń/s | 1.8 mln op/s | 233.02 MB/s | 123.58 MB/s |
+| 20.7 | 356.97 zdarzeń/s | 1099.61 zdarzeń/s | 1.8 mln op/s | 224.37 MB/s | 123.88 MB/s |
 
 ### AI: szybkość modelu
 
 | Model | Tokeny/s | Czas do pierwszego tokenu | Ładowanie modelu |
 |---|---|---|---|
-| local-qwen:latest | 9.7 | 136 ms | 0 s |
+| local-qwen:latest | 9.8 | 2576 ms | 2.2 s |
 
 ### AI: poprawność odpowiedzi (czat z bazą wiedzy, model `local-qwen:latest`)
 
 | Pytanie | Czas | Poprawna | Odpowiedź |
 |---|---|---|---|
-| According to the NHS, what should I do if I miss a dose of warfarin? | 29 s | ✅ | If you miss a dose of warfarin, you should follow these steps:  1.  **Take it as soon as you remember**: If you remember on the same day, take the missed dose i… |
-| What is the first aid for a snake bite in the field? | 59 s | ✅ | Based on general medical guidelines and standard first aid protocols, here is the procedure for treating a snake bite in the field:  ### **Immediate Actions** 1… |
-| How do you recognise and treat heat stroke? | 46 s | ✅ | # Recognizing and Treating Heat Stroke  ## **Recognition** Heat stroke is a medical emergency characterized by the following key signs: *   **High Body Temperat… |
-| Co zrobić, gdy pominę dawkę warfaryny? Odpowiedz po polsku. | 85 s | ✅ | ## Co zrobić, gdy zapomnisz przyjąć warfarynę?  Pominięcie dawki leku przeciwkrzepliwego, jakim jest warfaryna, wymaga spokoju i stosowania się do konkret… |
-| Jaka jest stolica Polski i jaka rzeka przez nią płynie? | 19 s | ✅ | Stolicą Polski jest **Warszawa**.  Przez tę miasto płynie rzeka **Wisła**.  ### Dodatkowe informacje: - **Wisła** jest najdłuższą rzeką w Polsce (1047 … |
+| According to the NHS, what should I do if I miss a dose of warfarin? | 18 s | ✅ | If you miss a dose of warfarin, follow this guidance:  - **Take it as soon as you remember** — unless it's already the next day. - **If you don't remember unt… |
+| What is the first aid for a snake bite in the field? | 62 s | ✅ | ## Snake Bite First Aid in the Field  Based on the *Zoonotic Exposures: Bites, Stings, Scratches* guide and the **CDC Yellow Book 2024 (Snakes)** entry, field f… |
+| How do you recognise and treat heat stroke? | 51 s | ✅ | ## Recognising Heat Stroke  Heat stroke is a **medical emergency**. The classic signs (as per the Travelers' Health guide) are:  - **Body temperature ≥ 40 °C… |
+| Co zrobić, gdy pominę dawkę warfaryny? Odpowiedz po polsku. | 75 s | ✅ | ## Co zrobić, gdy pominięto dawkę warfaryny?  Zgodnie z poradnikiem NHS z bazy wiedzy (*„How and when to take warfarin – NHS – If you forget to take wa… |
+| Jaka jest stolica Polski i jaka rzeka przez nią płynie? | 28 s | ✅ | Stolicą Polski jest **Warszawa**, a rzeką przez nią płynącą jest **Wisła**.  ## Uzasadnienie - Z artykułu Wikipedii „**Stolica Polski**" wynika, że f… |
+| Kto jest dyrektorem 1 LO w Tarnowie? Odpowiedz jednym zdaniem. | 33 s | ❌ | Nie mam w swoich offline'owych zasobach (Wikipedii ani bazie wiedzy) informacji o tym, kto jest dyrektorem I LO w Tarnowie.… |
 
 ### Wyszukiwanie w bazie wiedzy bez AI (Knowledge Search)
 
 | Pytanie | Czas | Najlepszy fragment | Dopasowanie |
 |---|---|---|---|
-| missed dose of warfarin | 0.2 s | Anticoagulant medicines - Dosage  - NHS - Warfarin | 82% |
+| missed dose of warfarin | 0.5 s | Anticoagulant medicines - Dosage  - NHS - Warfarin | 82% |
 | snake bite first aid | 0.2 s | Zoonotic Exposures: Bites, Stings, Scratches - Management | 75% |
-| heat stroke treatment | 0.2 s | Adventure Travel   CDC Yellow Book 2024 - HEAT STROKE | 73% |
-| water purification | 0.1 s | Mass Gatherings   CDC Yellow Book 2024 - Provide Education & Guidance to Travelers | 60% |
+| heat stroke treatment | 0.3 s | Adventure Travel   CDC Yellow Book 2024 - HEAT STROKE | 73% |
+| water purification | 0.2 s | Mass Gatherings   CDC Yellow Book 2024 - Provide Education & Guidance to Travelers | 60% |

@@ -67,7 +67,13 @@ def _get_json(url):
 
 def search_wikipedia(query):
     found = wiki.passages(KIWIX_URL, query, [query], limit=5)
-    return wiki.context(found) or "Nothing found. Try an article title in the nominative case or other keywords."
+    _, paths = wiki.candidates(KIWIX_URL, query, [query])
+    titles = "\n".join(f"- {path.replace('_', ' ')}" for path in paths[:10])
+    return (
+        (wiki.context(found) or "No passages found.\n")
+        + (f"\nArticles with matching titles (read_article reads one):\n{titles}\n" if titles else "")
+        + "\nIf this is not what you need, search again with fewer or other words, e.g. without names you are not sure of."
+    )
 
 
 def read_article(title):

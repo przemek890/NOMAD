@@ -215,7 +215,8 @@ ai_state() {
 # A note in Notes (Flatnotes) listing what is downloaded; rewritten only when it changes
 write_content_note() {
   [[ -d $NOTES_DIR ]] || return 0
-  local states file name tmp=${CONTENT_NOTE}.tmp
+  # Own temporary file: a preload at start and one from "make preload" may run at the same time
+  local states file name tmp=${CONTENT_NOTE}.$$.tmp
   states=$(api GET /rag/files | jq -r '.files[] | "\(.source | split("/") | last)\t\(.state)"') || states=''
   {
     printf '# Downloaded content\n\nPobrane materiały. NOMAD Box aktualizuje tę notatkę sam; co pobierać: content/sources.txt.\n'
