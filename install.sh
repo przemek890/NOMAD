@@ -80,16 +80,18 @@ get_repo() {
 
 # HTTPS at nomad.localhost only helps a browser on the same machine (macOS, Windows)
 configure() {
-  local env=$DIR/.env
+  local env=$DIR/.env name
   if [[ ! -f $env ]]; then
     if [[ $OS == Darwin ]] || is_wsl; then
       cp "$DIR/.env.example" "$env"
     else
-      # The address other devices use, e.g. for the Knowledge Search tile
-      echo "NOMAD_HOST=$(hostname).local" >"$env"
+      : >"$env"
     fi
   fi
-  local name
+  # A Linux machine is used from other devices: its name for them, e.g. for the Knowledge Search tile
+  if [[ $OS == Linux ]] && ! is_wsl && ! grep -q '^NOMAD_HOST=' "$env"; then
+    echo "NOMAD_HOST=$(hostname).local" >>"$env"
+  fi
   for name in NOMAD_LLM_URL NOMAD_EMBED_URL; do
     [[ -n ${!name:-} ]] || continue
     { grep -v "^${name}=" "$env" || true; echo "${name}=${!name}"; } >"${env}.tmp"

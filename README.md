@@ -1,106 +1,96 @@
 # NOMAD Box
 
-Offline encyclopedia, maps and AI assistant ([Project NOMAD](https://www.projectnomad.us)) that runs on your own computer.
+Encyklopedia, mapy i asystent AI działające bez internetu ([Project NOMAD](https://www.projectnomad.us)), na Twoim komputerze.
 
-**You need:** macOS, Windows or Linux (also a mini PC or Raspberry Pi 5), 4 GB RAM, 30 GB of free disk space and internet for the first start.
+**Potrzebujesz:** macOS, Windows lub Linux (także mini PC albo Raspberry Pi 5), 4 GB RAM, 30 GB wolnego miejsca, internet przy pierwszym uruchomieniu.
 
-## Install
+## Instalacja na jednym komputerze
 
-1. **macOS or Windows:** install and start [Docker Desktop](https://www.docker.com/products/docker-desktop/).
-   On Windows, also run `wsl --install -d Ubuntu` in PowerShell and do the next steps in the **Ubuntu** app.
-
-2. Download this project (**Code > Download ZIP**, then unzip) and open a terminal in its folder.
-
-3. Run:
+1. **macOS lub Windows:** zainstaluj i uruchom [Docker Desktop](https://www.docker.com/products/docker-desktop/).
+   Na Windows dodatkowo wpisz w PowerShell `wsl --install -d Ubuntu`, a dalsze kroki rób w aplikacji **Ubuntu**.
+2. Pobierz projekt (**Code > Download ZIP**, rozpakuj) i otwórz terminal w jego folderze.
+3. Wpisz:
 
    ```bash
    bash install.sh
    ```
 
-4. Open the address shown at the end, e.g. **http://localhost:8080**.
+4. Otwórz adres podany na końcu, np. **http://localhost:8080**.
 
-## AI chat on your computer, NOMAD on a mini PC
+## Model AI na komputerze, NOMAD na mini PC
 
-The AI model runs on your computer (macOS, Windows or Linux, [Ollama](https://ollama.com)).
-NOMAD runs on a mini PC connected to your computer **only with an Ethernet cable** (no router).
-Your computer becomes `10.77.0.1` on the cable, gives the mini PC an address and shares its internet.
-You use NOMAD in the browser on your computer: **http://nomad.local:8080**.
+Model AI działa na Twoim komputerze (macOS, Windows lub Linux), a NOMAD na mini PC połączonym z nim **tylko kablem Ethernet** (bez routera).
+Komputer dostaje na kablu adres `10.77.0.1`, nadaje adres mini PC i udostępnia mu internet.
+NOMAD otwierasz w przeglądarce na komputerze: **http://nomad.local:8080**.
 
-### First time
+### Pierwszy raz
 
-1. Install [Ollama](https://ollama.com) on your computer and download a chat model and the embedding model
-   (the mini PC then needs no AI of its own, which saves ~3 GB of disk and RAM):
+1. **Na komputerze** zainstaluj [Ollama](https://ollama.com) i pobierz model do czatu oraz model do wyszukiwania:
 
    ```bash
    ollama pull qwen3:8b
    ollama pull nomic-embed-text:v1.5
    ```
 
-   macOS and Linux also need [Caddy](https://caddyserver.com/docs/install) (`brew install caddy`).
-   Settings for your computer go in `network/local.env` (copy `network/local.env.example`), e.g. the
-   command that starts Ollama, so `start` can bring it up after a restart.
-2. Connect the mini PC to your computer with an Ethernet cable.
-3. Start everything on your computer:
-   - **macOS / Linux:** in Terminal, in the project folder: `network/start.sh` (asks for your password)
-   - **Windows:** double-click `network\start.cmd` and confirm the Administrator prompt.
-     Windows shares an existing internet connection, so connect to Wi-Fi first.
-4. Install NOMAD on the mini PC: copy the project folder there and run in it
-   (a Windows mini PC: in the **Ubuntu** app, see Install):
+   macOS: zainstaluj też Caddy: `brew install caddy` ([Homebrew](https://brew.sh)). Linux: `sudo apt install caddy`.
+2. Połącz mini PC z komputerem kablem Ethernet.
+3. **Na komputerze** uruchom sieć i udostępnij model:
+   - **macOS / Linux:** w Terminalu, w folderze projektu: `network/start.sh` (zapyta o hasło do komputera)
+   - **Windows:** połącz się z Wi‑Fi, kliknij dwa razy `network\start.cmd` i potwierdź okno administratora
+
+   Na końcu zobaczysz adres mini PC, np. `10.77.0.11`.
+4. **Na mini PC** (Linux, np. Debian) wpisz:
 
    ```bash
-   NOMAD_LLM_URL=http://10.77.0.1:11434 NOMAD_EMBED_URL=http://10.77.0.1:11434 bash install.sh
+   curl -fsSL https://raw.githubusercontent.com/przemek890/NOMAD/main/install.sh | NOMAD_LLM_URL=http://10.77.0.1:11434 NOMAD_EMBED_URL=http://10.77.0.1:11434 bash
    ```
 
-5. Open **http://nomad.local:8080** in the browser on your computer.
-   If the name does not work, use the mini PC address shown by `start` (e.g. `http://10.77.0.11:8080`).
+5. **Na komputerze** otwórz **http://nomad.local:8080** (albo `http://<adres mini PC>:8080`).
 
-### Every day
+### Na co dzień
 
-| What happened | What to do |
+| Sytuacja | Co zrobić |
 |---|---|
-| Your computer was restarted | macOS / Linux: `network/start.sh`, Windows: double-click `network\start.cmd` |
-| The mini PC was restarted | nothing, NOMAD starts by itself in a few minutes |
-| You want to use NOMAD | open http://nomad.local:8080 |
+| Uruchomiłeś ponownie komputer | macOS / Linux: `network/start.sh`, Windows: dwuklik w `network\start.cmd` |
+| Uruchomiłeś ponownie mini PC | nic, NOMAD wstaje sam po kilku minutach |
+| Chcesz używać NOMAD | otwórz http://nomad.local:8080 |
+| Chcesz sprawdzić, czy wszystko działa | `tests/smoke.sh nomad.local` |
 
-Keep your computer on (not asleep) while you use NOMAD: the mini PC uses its model and internet.
-Wikipedia, maps and the other content work without internet.
+Do czatu AI komputer musi być włączony i nieuśpiony. Wikipedia, mapy, notatki i wyszukiwarka wiedzy działają bez niego.
 
-### Single steps
+### Mały mini PC (np. HP t630, 4 GB RAM)
+
+Zainstaluj Debiana 13 bez pulpitu zamiast Windowsa: zostaje ok. 3 GB wolnego RAM.
+`minipc/preseed.cfg` instaluje go automatycznie (**kasuje cały dysk**). Po instalacji wpisz na mini PC `sudo minipc/tune.sh`.
+
+### Pojedyncze kroki (dla zaawansowanych)
 
 | | macOS / Linux | Windows |
 |---|---|---|
-| everything (model, network, bridge) | `network/start.sh` | `network\start.cmd` |
-| cable network only | `sudo network/link.sh up` | `network\link.cmd up` |
-| model for the mini PC only | `network/llm-bridge.sh start` | `network\link.cmd bridge-start` |
-| status, mini PC address | `network/link.sh status` | `network\link.cmd status` |
-| undo | `network/llm-bridge.sh stop`, `sudo network/link.sh down` | `network\link.cmd bridge-stop`, `network\link.cmd down` |
+| wszystko naraz | `network/start.sh` | `network\start.cmd` |
+| tylko sieć na kablu | `sudo network/link.sh up` | `network\link.cmd up` |
+| tylko model dla mini PC | `network/llm-bridge.sh start` | `network\link.cmd bridge-start` |
+| stan i adres mini PC | `network/link.sh status` | `network\link.cmd status` |
+| cofnięcie zmian | `network/llm-bridge.sh stop`, `sudo network/link.sh down` | `network\link.cmd bridge-stop`, `network\link.cmd down` |
 
-The model stays reachable only on the cable. On macOS and Linux the bridge passes only the chat
-endpoints (no downloading or deleting models); on Windows it forwards the whole Ollama API.
+Model jest dostępny tylko na kablu. Ustawienia Twojego komputera (np. własna ścieżka do Ollamy lub Caddy) wpisz w `network/local.env`, wzór: `network/local.env.example`.
 
-### A small mini PC (e.g. HP t630, 4 GB RAM)
+## Co jest w środku
 
-Use Debian without a desktop instead of Windows: Docker runs natively and ~3 GB of RAM stays free.
-`minipc/preseed.cfg` installs Debian 13 unattended (it **erases the whole disk**). After the install run
-`sudo minipc/tune.sh` on the mini PC: compressed RAM swap (zram), the name `nomad.local`
-and no "ACPI BIOS Error" messages on the screen of HP thin clients.
+- **Information Library** – Wikipedia PL i poradniki (medycyna, majsterkowanie, rolnictwo), wyszukiwanie po słowach.
+- **Maps** – mapa Polski offline.
+- **AI Assistant** – czat odpowiadający na podstawie bazy wiedzy (wymaga modelu na komputerze).
+- **Knowledge Search** (kafelek, port 8070) – znajduje w bazie wiedzy fragmenty najbliższe znaczeniem pytaniu, **bez modelu AI**. Źródła są głównie angielskie, więc pytaj po angielsku.
+- **Notes** – notatka **Downloaded content** z listą pobranych materiałów, aktualizuje się sama.
 
-## Knowledge Search
+Lista pobieranych materiałów: `content/sources.txt`. Własne dokumenty dla AI wrzuć do `content/knowledge/`.
 
-**http://localhost:8070** (from another device: `http://<NOMAD machine>:8070`, also a tile on the dashboard)
-finds the passages of the AI knowledge base closest in meaning to a question. It runs on the NOMAD
-machine itself with the same embedding model NOMAD indexes with, so it works when the AI chat model
-is off or the computer running it is away. Most indexed sources are English: ask in English.
+## Polecenia
 
-The note **Downloaded content** in Notes lists what is downloaded and what the AI assistant can search.
-
-## Everyday use
-
-| Command | What it does |
+| Polecenie | Co robi |
 |---|---|
-| `make` | starts NOMAD |
-| `make down` | stops NOMAD |
-| `make logs` | shows what is happening |
-| `make refresh` | applies changed `box/` scripts after `git pull` without a full rebuild |
-
-What gets downloaded is listed in `content/sources.txt`. Put your own documents for the AI assistant in `content/knowledge/`.
+| `make` | uruchamia NOMAD |
+| `make down` | zatrzymuje NOMAD |
+| `make logs` | pokazuje, co się dzieje |
+| `make refresh` | wgrywa zmienione skrypty po `git pull`, bez przebudowy |
+| `tests/smoke.sh [adres]` | sprawdza, czy wszystko działa |

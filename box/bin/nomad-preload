@@ -244,12 +244,16 @@ write_content_note() {
   fi
 }
 
-# Dashboard tile for the knowledge search page (compose service "search"); 409 means it exists
+# Dashboard tile for the knowledge search page (compose service "search"): created, or
+# updated when it exists (NOMAD names it nomad_link_ + the name), e.g. after NOMAD_HOST changed
 add_search_link() {
   [[ -n ${NOMAD_SEARCH_URL:-} ]] || return 0
-  api POST /system/services/links --data "$(json --arg u "$NOMAD_SEARCH_URL" \
-    '{friendly_name: "Knowledge Search", url: $u, icon: "IconSearch",
-      description: "Find passages in the knowledge base, also without the AI chat model"}')" >/dev/null 2>&1 || true
+  local tile
+  tile=$(json --arg u "$NOMAD_SEARCH_URL" '{friendly_name: "Knowledge Search", url: $u, icon: "IconSearch",
+    description: "Find passages in the knowledge base, also without the AI chat model"}')
+  api POST /system/services/links --data "$tile" >/dev/null 2>&1 \
+    || api PUT /system/services/links --data "$(jq -c '.service_name = "nomad_link_knowledge_search"' <<<"$tile")" >/dev/null \
+    || log "✗ Could not add the Knowledge Search tile"
 }
 
 main() {
