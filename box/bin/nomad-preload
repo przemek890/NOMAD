@@ -100,30 +100,12 @@ manual_ingest() {
 setup_ai() {
   add_service nomad_ollama
   api PATCH /system/settings --data "$(json --arg u "$LLM_ROUTER_URL" '{key: "ai.remoteOllamaUrl", value: $u}')" >/dev/null
+  curl -fs -m 5 "http://127.0.0.1:${LLM_ROUTER_PORT}/api/version" >/dev/null \
+    || log "No Ollama at ${NOMAD_OLLAMA_URL} yet; chat works as soon as it is running"
   docker exec nomad_ollama ollama show "$EMBED_MODEL" >/dev/null 2>&1 && return
   log "Downloading ${EMBED_MODEL}"
   docker exec nomad_ollama ollama pull "$EMBED_MODEL" >/dev/null
   log "✓ ${EMBED_MODEL}"
-}
-
-chat_model_ready() {
-  curl -fs -m 5 "${LLM_ROUTER_LOCAL}/api/tags" | jq -e --arg m "$1" 'any(.models[]; .name == $m)' >/dev/null
-}
-
-# Chat model from the "chat" entry, pulled through nomad-llm into the Ollama at NOMAD_OLLAMA_URL
-setup_chat() {
-  local model
-  model=$(items chat | head -n1)
-  [[ -n $model ]] || return 0
-  api PATCH /system/settings --data "$(json --arg m "$model" '{key: "chat.lastModel", value: $m}')" >/dev/null
-  if ! curl -fs -m 5 "${LLM_ROUTER_LOCAL}/api/version" >/dev/null; then
-    log "✗ Ollama at ${NOMAD_OLLAMA_URL} is not responding; start it and run: make preload"
-    return 0
-  fi
-  chat_model_ready "$model" && return
-  log "Downloading ${model} to the Ollama at ${NOMAD_OLLAMA_URL}"
-  curl -fsS "${LLM_ROUTER_LOCAL}/api/pull" --data "$(json --arg m "$model" '{model: $m, stream: false}')" >/dev/null
-  log "✓ ${model}"
 }
 
 rag_state() {
@@ -213,7 +195,6 @@ main() {
     flock -n 9 || exit 0
     embed_planned
   ) 9>"$EMBED_LOCK" >/proc/1/fd/1 2>&1 &
-  (setup_chat) || log "✗ Could not download the chat model"
   log "Content from content/sources.txt is installed or downloading in the background: ${NOMAD_URL}"
 }
 

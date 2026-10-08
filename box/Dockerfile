@@ -12,7 +12,7 @@ ARG NOMAD_REDIS_IMAGE
 ARG NOMAD_DOZZLE_IMAGE
 
 LABEL org.opencontainers.image.title="NOMAD Box" \
-      org.opencontainers.image.description="Project NOMAD for Windows, macOS and Raspberry Pi in a single Docker-in-Docker container" \
+      org.opencontainers.image.description="Project NOMAD for Windows, macOS, Raspberry Pi and Linux in a single Docker-in-Docker container" \
       org.opencontainers.image.version="${NOMAD_VERSION}" \
       org.opencontainers.image.licenses="Apache-2.0"
 
