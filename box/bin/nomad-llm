@@ -3,13 +3,8 @@ set -Eeuo pipefail
 
 source /usr/local/lib/nomad-box/common.sh
 
-readonly TAGS_PORT=$((LLM_ROUTER_PORT + 1))
+readonly MODELS_PORT=$((LLM_ROUTER_PORT + 1))
 readonly CONFIG=/run/nomad-llm.caddyfile
-
-# NOMAD_OLLAMA_URL as seen from the container: localhost is the machine running Docker
-chat_upstream() {
-  sed -E 's#://(localhost|127\.0\.0\.1)([:/]|$)#://host.docker.internal\2#; s#/$##' <<<"$NOMAD_OLLAMA_URL"
-}
 
 write_config() {
   cat >"$CONFIG" <<EOF
@@ -23,15 +18,16 @@ write_config() {
 }
 
 :${LLM_ROUTER_PORT} {
-	handle /api/tags {
-		reverse_proxy 127.0.0.1:${TAGS_PORT}
+	@models path /api/tags /v1/models
+	handle @models {
+		reverse_proxy 127.0.0.1:${MODELS_PORT}
 	}
 	@embed path /api/embed /api/embeddings /v1/embeddings
 	handle @embed {
 		reverse_proxy ${EMBED_OLLAMA}
 	}
 	handle {
-		reverse_proxy $(chat_upstream) {
+		reverse_proxy $(llm_upstream) {
 			header_up Host {upstream_hostport}
 			flush_interval -1
 		}
@@ -40,26 +36,55 @@ write_config() {
 EOF
 }
 
-# Chat models from NOMAD_OLLAMA_URL plus embedding models from the bundled Ollama
-tags() {
-  local line body
+respond() {
+  printf 'HTTP/1.1 %s\r\nContent-Type: application/json\r\nContent-Length: %d\r\nConnection: close\r\n\r\n%s' \
+    "$1" "$(printf '%s' "$2" | wc -c)" "$2"
+}
+
+# Ollama: its models plus the embedding model. Any other server gets 404, so NOMAD
+# switches to the OpenAI API. While the server is unreachable we answer after NOMAD's
+# 5 s timeout, because NOMAD remembers the server type from the first answer it gets.
+ollama_tags() {
+  local reply code embed
+  reply=$(curl -s -m 3 -w '\n%{http_code}' "$(llm_upstream)/api/tags") || { sleep 6; return; }
+  code=${reply##*$'\n'}
+  reply=${reply%$'\n'*}
+  if [[ $code != 200 ]] || ! jq -e '.models | arrays' <<<"$reply" >/dev/null 2>&1; then
+    respond '404 Not Found' '{}'
+    return
+  fi
+  embed=$(curl -fs -m 3 "${EMBED_OLLAMA}/api/tags") || embed='{}'
+  respond '200 OK' "$(jq -c --argjson e "$embed" '.models += ($e.models // [] | map(select(.name | contains("embed"))))' <<<"$reply")"
+}
+
+# OpenAI-compatible list: the server's models plus the embedding model
+openai_models() {
+  local reply embed
+  reply=$(curl -fs -m 3 "$(llm_upstream)/v1/models") || reply='{}'
+  embed=$(curl -fs -m 3 "${EMBED_OLLAMA}/v1/models") || embed='{}'
+  respond '200 OK' "$(jq -cn --argjson u "$reply" --argjson e "$embed" \
+    '{object: "list", data: (($u.data // []) + ($e.data // [] | map(select(.id | contains("embed")))))}')"
+}
+
+models() {
+  local path line
+  read -r _ path _
   while IFS= read -r line && [[ -n ${line%$'\r'} ]]; do :; done
-  body=$(jq -cs '{models: ((.[0].models // []) + (.[1].models // [] | map(select(.name | contains("embed")))))}' \
-    <(curl -fs -m 3 "$(chat_upstream)/api/tags" || echo '{}') \
-    <(curl -fs -m 3 "${EMBED_OLLAMA}/api/tags" || echo '{}'))
-  printf 'HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: %d\r\nConnection: close\r\n\r\n%s' \
-    "$(printf '%s' "$body" | wc -c)" "$body"
+  case $path in
+    /api/tags*) ollama_tags ;;
+    *) openai_models ;;
+  esac
 }
 
 serve() {
   write_config
-  log "Chat LLM: ${NOMAD_OLLAMA_URL}; embeddings: bundled Ollama (${EMBED_MODEL})"
-  socat "TCP-LISTEN:${TAGS_PORT},bind=127.0.0.1,fork,reuseaddr" EXEC:"nomad-llm tags" &
+  log "Chat LLM: ${NOMAD_LLM_URL}; embeddings: bundled Ollama (${EMBED_MODEL})"
+  socat "TCP-LISTEN:${MODELS_PORT},bind=127.0.0.1,fork,reuseaddr" EXEC:"nomad-llm models" &
   exec caddy run --adapter caddyfile --config "$CONFIG"
 }
 
 case ${1:-} in
   serve) serve ;;
-  tags) tags ;;
-  *) fail "Usage: nomad-llm serve|tags" ;;
+  models) models ;;
+  *) fail "Usage: nomad-llm serve|models" ;;
 esac

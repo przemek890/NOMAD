@@ -6,105 +6,52 @@
 |---|---|---|---|
 | Windows 10 or 11 | Intel, AMD, ARM | 16 GB | Docker Desktop, WSL2 |
 | macOS 14 or later | Apple M1 to M4 | 16 GB | Docker Desktop |
-| Raspberry Pi OS 64-bit | Raspberry Pi 5 | 8 GB | Docker, SSD |
-| Linux mini PC | Intel, AMD, ARM | 4 GB | Docker, Ollama on a Mac over Ethernet |
+| Raspberry Pi OS 64-bit | Raspberry Pi 5 | 8 GB | SSD |
+| Ubuntu or Debian | Intel, AMD, ARM | 4 GB | — |
 
-You need about 35 GB of free disk space and an internet connection for the first start. AI chat runs in [Ollama](https://ollama.com); NOMAD itself only computes the search index, so it fits in 4 GB of RAM.
+You need about 35 GB of free disk space and an internet connection for the first start. AI chat uses an LLM server you run yourself, such as [Ollama](https://ollama.com), LM Studio or llama.cpp; NOMAD itself only computes the search index, so it fits in 4 GB of RAM.
 
-## Install on macOS
+## Install
 
-1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) and start it.
+Before the first install:
 
-2. Install the developer tools:
+- **macOS:** install and start [Docker Desktop](https://www.docker.com/products/docker-desktop/), then run `xcode-select --install`.
+- **Windows:** in PowerShell as administrator run `wsl --install -d Ubuntu` and restart. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) and turn on **Settings > Resources > WSL integration > Ubuntu**. Run the command below in the **Ubuntu** app.
+- **Raspberry Pi, Ubuntu, Debian:** nothing; Docker and the tools are installed for you.
 
-   ```bash
-   xcode-select --install
-   ```
+Install and start NOMAD:
 
-3. Get the project:
+```bash
+curl -fsSL https://raw.githubusercontent.com/przemek890/NOMAD/main/install.sh | bash
+```
 
-   ```bash
-   git clone https://github.com/przemek890/NOMAD.git
-   cd NOMAD
-   ```
+NOMAD goes to `~/nomad` on macOS and `/opt/nomad` elsewhere, and starts again after a reboot. Run the same command to update it. When it finishes, open **https://nomad.localhost** on macOS and Windows, or `http://DEVICE-ADDRESS:8080` from another device.
 
-4. Start NOMAD (on the first run macOS asks for your password to trust the HTTPS certificate):
+By default, chat uses an LLM server on the same machine at `http://localhost:11434`. Use another one with `NOMAD_LLM_URL`:
 
-   ```bash
-   make
-   ```
+```bash
+curl -fsSL https://raw.githubusercontent.com/przemek890/NOMAD/main/install.sh | NOMAD_LLM_URL=http://192.168.1.20:1234 bash
+```
 
-5. Open **https://nomad.localhost**.
+## Mini PC wired to a Mac
 
-6. AI chat uses [Ollama](https://ollama.com) running on this Mac at `http://localhost:11434`, with any model you pull into it.
+NOMAD runs on the mini PC, connected to the Mac with an Ethernet cable; the LLM server runs on the Mac.
 
-## Install on Windows
+1. On the Mac, turn on **System Settings > General > Sharing > Internet Sharing** from Wi-Fi to Ethernet. The mini PC gets internet through the Mac, and the Mac is always `192.168.2.1` for it.
 
-1. In PowerShell as administrator, install Ubuntu on WSL2 and restart the computer:
+2. Start the LLM server on the Mac so it accepts connections from the network (for Ollama: `OLLAMA_HOST=0.0.0.0`).
 
-   ```powershell
-   wsl --install -d Ubuntu
-   ```
-
-2. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/). In **Settings > Resources > WSL integration**, turn on **Ubuntu**.
-
-3. In the **Ubuntu** app, install the tools:
+3. On the mini PC:
 
    ```bash
-   sudo apt update && sudo apt install -y git make
+   curl -fsSL https://raw.githubusercontent.com/przemek890/NOMAD/main/install.sh | NOMAD_LLM_URL=http://192.168.2.1:11434 bash
    ```
 
-4. Follow steps 3–6 of the macOS instructions in the Ubuntu window.
-
-## Install on Raspberry Pi 5
-
-1. Flash **Raspberry Pi OS 64-bit** with [Raspberry Pi Imager](https://www.raspberrypi.com/software/).
-
-2. Install Docker and the tools:
-
-   ```bash
-   sudo apt update && sudo apt install -y git make
-   curl -fsSL https://get.docker.com | sudo sh
-   sudo usermod -aG docker "$USER"
-   ```
-
-3. Switch to the kernel the database needs and reboot:
-
-   ```bash
-   echo "kernel=kernel8.img" | sudo tee -a /boot/firmware/config.txt
-   sudo reboot
-   ```
-
-4. Follow steps 3–6 of the macOS instructions.
-
-From another device on the network: `http://PI-ADDRESS:8080`.
-
-## Install on a Linux mini PC with Ollama on a Mac
-
-NOMAD runs on the mini PC, connected to the Mac with an Ethernet cable; Ollama runs on the Mac.
-
-1. On the Mac, turn on **System Settings > General > Sharing > Internet Sharing** from Wi-Fi to Ethernet. The mini PC then gets internet through the Mac, and the Mac is always `192.168.2.1` for it. Ollama on the Mac must listen on the network (`OLLAMA_HOST=0.0.0.0`).
-
-2. On the mini PC (Ubuntu or Debian), install Docker and the tools, then log out and back in:
-
-   ```bash
-   sudo apt update && sudo apt install -y git make
-   curl -fsSL https://get.docker.com | sudo sh
-   sudo usermod -aG docker "$USER"
-   ```
-
-3. Get the project, point NOMAD at the Mac's Ollama and start it. The first run builds the image on the mini PC, which takes a while:
-
-   ```bash
-   git clone https://github.com/przemek890/NOMAD.git
-   cd NOMAD
-   echo "NOMAD_OLLAMA_URL=http://192.168.2.1:11434" > .env
-   make
-   ```
-
-4. On the Mac, open `http://MINI-PC-ADDRESS:8080` (the mini PC shows its address with `hostname -I`).
+4. On the Mac, open the address the installer prints at the end.
 
 ## Commands
+
+Run them in the NOMAD folder:
 
 | Command | What it does |
 |---|---|

@@ -96,12 +96,12 @@ manual_ingest() {
   api PATCH /system/settings --data '{"key": "rag.defaultIngestPolicy", "value": "Manual"}' >/dev/null
 }
 
-# The bundled Ollama only computes embeddings; chat goes through nomad-llm to NOMAD_OLLAMA_URL
+# The bundled Ollama only computes embeddings; chat goes through nomad-llm to NOMAD_LLM_URL
 setup_ai() {
   add_service nomad_ollama
   api PATCH /system/settings --data "$(json --arg u "$LLM_ROUTER_URL" '{key: "ai.remoteOllamaUrl", value: $u}')" >/dev/null
-  curl -fs -m 5 "http://127.0.0.1:${LLM_ROUTER_PORT}/api/version" >/dev/null \
-    || log "No Ollama at ${NOMAD_OLLAMA_URL} yet; chat works as soon as it is running"
+  curl -fs -m 5 "$(llm_upstream)/v1/models" >/dev/null \
+    || log "No LLM server at ${NOMAD_LLM_URL} yet; chat works as soon as it is running"
   docker exec nomad_ollama ollama show "$EMBED_MODEL" >/dev/null 2>&1 && return
   log "Downloading ${EMBED_MODEL}"
   docker exec nomad_ollama ollama pull "$EMBED_MODEL" >/dev/null
