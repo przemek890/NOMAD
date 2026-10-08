@@ -24,7 +24,7 @@ Otwórz http://nomad.local:8080 i sprawdź po kolei:
 | 4 | **Notes** | notatki „Downloaded content” i „Benchmarks” |
 | 5 | **Knowledge Search**, wpisz `snake bite first aid` | fragmenty z poradników, dopasowanie powyżej 60% |
 | 6 | **AI Assistant**, model `local-qwen`, Knowledge Base włączone, zapytaj o pytanie z tabeli niżej | odpowiedź w kilkanaście sekund, zgodna z tabelą |
-| 7 | **Settings → Benchmark → System Only** | wynik po ~5 min („AI Only” tu nie zadziała: pobiera własny model 6,5 GB na mini PC; szybkość AI mierzy `./nomad report`) |
+| 7 | **Settings → Benchmark → System Only** | wynik po ~5 min. „Run Full Benchmark” i „AI Only” kończą się błędem: NOMAD chce do nich pobrać własny model `llama3.1:8b`, a pobieranie modeli jest zablokowane (NOMAD korzysta tylko z modelu na komputerze). Szybkość AI mierzy `./nomad report` |
 | 8 | **Settings → System** | obciążenie CPU, zajęty RAM i dysk |
 | 9 | wyłącz Wi‑Fi na komputerze, powtórz 2–6 | działa tak samo |
 | 10 | wyłącz komputer z modelem, powtórz 2–5 | działa; czat AI nie odpowiada (to normalne) |

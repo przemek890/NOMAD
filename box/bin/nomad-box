@@ -35,6 +35,16 @@ load_images() {
   done
 }
 
+# Older versions of the images NOMAD Box brings, left after an update. Images NOMAD pulled itself
+# (apps, the benchmark; some by digest, without a tag) stay: offline they cannot be pulled again.
+remove_old_images() {
+  local current=" ${NOMAD_ADMIN_IMAGE} ${NOMAD_DISK_COLLECTOR_IMAGE} ${NOMAD_MYSQL_IMAGE} ${NOMAD_REDIS_IMAGE} ${NOMAD_DOZZLE_IMAGE} "
+  local image
+  for image in $(docker images --format '{{.Repository}}:{{.Tag}}' | grep -E '^(nomad-local/|mysql:|redis:|amir20/dozzle:)'); do
+    [[ $current == *" ${image} "* ]] || docker rmi "$image" >/dev/null 2>&1 || true
+  done
+}
+
 ensure_secrets() {
   mkdir -p "${NOMAD_HOME}"/{storage/logs,storage/kb_uploads,mysql,redis}
   [[ -s $SECRETS_FILE ]] && return
@@ -60,8 +70,7 @@ main() {
   nomad-domain caddyfile
   log "Starting Project NOMAD ${NOMAD_VERSION}"
   stack up --detach --remove-orphans
-  # Only dangling layers: images of apps that are not running (e.g. the benchmark) must stay for offline use
-  docker image prune --force >/dev/null
+  remove_old_images
   if wait_for 600 curl -fsS "${API_URL}/health"; then
     nomad-domain links || log "Could not set the HTTPS app links"
     log "Command Center ready: ${NOMAD_URL}"

@@ -18,6 +18,12 @@ write_config() {
 }
 
 :${LLM_ROUTER_PORT} {
+	# NOMAD only uses the models of the LLM server: no downloading, deleting or creating models
+	# (e.g. its AI benchmark always tries to download llama3.1:8b)
+	@manage path /api/pull /api/push /api/create /api/copy /api/delete /api/blobs/*
+	handle @manage {
+		respond "NOMAD uses the models of ${NOMAD_LLM_URL}; manage models there" 403
+	}
 	@models path /api/tags /v1/models
 	handle @models {
 		reverse_proxy 127.0.0.1:${MODELS_PORT}
