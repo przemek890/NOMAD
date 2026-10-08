@@ -41,6 +41,8 @@ refresh: ## Put changed box/ scripts into the existing image and restart (no ful
 
 image:
 	@docker image inspect $(NOMAD_BOX_IMAGE) >/dev/null 2>&1 || $(MAKE) --no-print-directory build prune
+	@docker image inspect $$(docker compose config --images embed) >/dev/null 2>&1 \
+		|| { docker compose build embed && docker builder prune --all --force >/dev/null; }
 
 up: init image ## Build if needed and start NOMAD with the content from content/ (default: make)
 	docker compose up --detach --wait
@@ -93,8 +95,9 @@ export: ## Save all images to dist/nomad-box.tar.gz (to move them to another mac
 import: ## Load the images from dist/nomad-box.tar.gz
 	gunzip --stdout $(ARCHIVE) | docker load
 
-prune: ## Clear the build cache (frees several GB after make build)
+prune: ## Clear the build cache and stop the builder (frees several GB and its RAM after make build)
 	docker buildx prune --builder $(BUILDER) --all --force
+	docker buildx stop $(BUILDER)
 
 clean: ## Remove the container and the inner Docker engine (data/ is kept)
 	docker compose down --volumes

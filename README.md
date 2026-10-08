@@ -37,6 +37,8 @@ You use NOMAD in the browser on your computer: **http://nomad.local:8080**.
    ```
 
    macOS and Linux also need [Caddy](https://caddyserver.com/docs/install) (`brew install caddy`).
+   Settings for your computer go in `network/local.env` (copy `network/local.env.example`), e.g. the
+   command that starts Ollama, so `start` can bring it up after a restart.
 2. Connect the mini PC to your computer with an Ethernet cable.
 3. Start everything on your computer:
    - **macOS / Linux:** in Terminal, in the project folder: `network/start.sh` (asks for your password)
@@ -82,6 +84,15 @@ Use Debian without a desktop instead of Windows: Docker runs natively and ~3 GB 
 `minipc/preseed.cfg` installs Debian 13 unattended (it **erases the whole disk**). After the install run
 `sudo minipc/tune.sh` on the mini PC: compressed RAM swap (zram), the name `nomad.local`
 and no "ACPI BIOS Error" messages on the screen of HP thin clients.
+
+## Knowledge Search
+
+**http://localhost:8070** (from another device: `http://<NOMAD machine>:8070`, also a tile on the dashboard)
+finds the passages of the AI knowledge base closest in meaning to a question. It runs on the NOMAD
+machine itself with the same embedding model NOMAD indexes with, so it works when the AI chat model
+is off or the computer running it is away. Most indexed sources are English: ask in English.
+
+The note **Downloaded content** in Notes lists what is downloaded and what the AI assistant can search.
 
 ## Everyday use
 

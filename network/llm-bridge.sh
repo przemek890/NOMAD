@@ -6,19 +6,22 @@
 #
 #   network/llm-bridge.sh start|stop|status
 #
-# Options (environment): LOCALMODEL_DIR (default ~/Documents/LocalModel, its Caddy is reused),
-# CADDY (path to a caddy binary), OLLAMA_URL (default 127.0.0.1:11434)
+# Settings (network/local.env or environment): CADDY (default: caddy on PATH),
+# OLLAMA_URL (default 127.0.0.1:11434)
 set -Eeuo pipefail
+
+readonly HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+# shellcheck source=/dev/null
+[[ ! -f $HERE/local.env ]] || source "$HERE/local.env"
 
 readonly LINK_IP=10.77.0.1
 readonly PORT=11434
-readonly DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/.run
+readonly DIR=$HERE/.run
 readonly CONFIG=$DIR/llm-bridge.caddyfile
 readonly PIDFILE=$DIR/llm-bridge.pid
 readonly LOGFILE=$DIR/llm-bridge.log
 readonly UPSTREAM=${OLLAMA_URL:-127.0.0.1:11434}
-CADDY=${CADDY:-${LOCALMODEL_DIR:-$HOME/Documents/LocalModel}/runtime/caddy/caddy}
-command -v "$CADDY" >/dev/null || CADDY=$(command -v caddy || true)
+readonly CADDY=${CADDY:-$(command -v caddy || true)}
 
 say() {
   printf '\033[1;32m[llm-bridge]\033[0m %s\n' "$*"
@@ -74,7 +77,7 @@ EOF
 
 start() {
   running && { say "Already running: http://${LINK_IP}:${PORT}"; return; }
-  [[ -x $CADDY ]] || die "Caddy not found. Install it (https://caddyserver.com/docs/install) or set CADDY=/path/to/caddy"
+  [[ -x $CADDY ]] || die "Caddy not found. Install it (https://caddyserver.com/docs/install) or set CADDY in network/local.env"
   { ifconfig 2>/dev/null || ip -4 addr; } | grep -q "inet ${LINK_IP}[ /]" || die "No ${LINK_IP} here. First: sudo network/link.sh up"
   curl -fsS -m 3 "http://${UPSTREAM}/api/version" >/dev/null \
     || die "Ollama does not answer at ${UPSTREAM}. Start Ollama first"

@@ -1,6 +1,8 @@
 name: nomad-box
 
-x-logging: &logging
+# Every container: restart after a crash, at most 30 MB of logs
+x-defaults: &defaults
+  restart: unless-stopped
   logging:
     driver: json-file
     options:
@@ -9,13 +11,12 @@ x-logging: &logging
 
 services:
   nomad:
-    <<: *logging
+    <<: *defaults
     image: ${NOMAD_BOX_IMAGE:-nomad-box:latest}
     container_name: nomad-box
     hostname: nomad-box
     privileged: true
     init: true
-    restart: unless-stopped
     stop_grace_period: 90s
     env_file:
       - path: .env
@@ -40,10 +41,10 @@ services:
   # Knowledge search without the chat model: questions become nomic-embed-text vectors
   # here (the model NOMAD indexes with), Qdrant in nomad-box returns the closest passages
   embed:
-    <<: *logging
-    image: ghcr.io/ggml-org/llama.cpp:server
+    <<: *defaults
+    build: embed
+    image: nomad-embed:b11459
     container_name: nomad-embed
-    restart: unless-stopped
     command: [--hf-repo, nomic-ai/nomic-embed-text-v1.5-GGUF, --hf-file, nomic-embed-text-v1.5.f16.gguf,
               --embeddings, --pooling, mean, --ctx-size, "2048", --ubatch-size, "2048", --host, 0.0.0.0, --port, "8080"]
     environment:
@@ -52,10 +53,9 @@ services:
       - ${NOMAD_DATA_DIR:-./data}/models:/models
 
   search:
-    <<: *logging
+    <<: *defaults
     image: python:3.13-alpine
     container_name: nomad-search
-    restart: unless-stopped
     command: [python, /app/server.py]
     ports:
       - ${NOMAD_SEARCH_PORT:-8070}:8070
@@ -63,12 +63,11 @@ services:
       - ./search:/app:ro
 
   proxy:
-    <<: *logging
+    <<: *defaults
     image: caddy:2.10-alpine
     container_name: nomad-proxy
     profiles:
       - https
-    restart: unless-stopped
     command: caddy run --config /data/Caddyfile --adapter caddyfile --watch
     depends_on:
       nomad:
