@@ -173,11 +173,14 @@ mac_status() {
   echo "DHCP server:    $(launchctl print system/com.apple.bootpd >/dev/null 2>&1 && echo on || echo off)"
   echo "Internet share: $([[ $(sysctl -n net.inet.ip.forwarding) == 1 ]] && echo on || echo off)"
   echo "Mini PC:"
-  if [[ -r $LEASES ]] && grep -q ip_address "$LEASES"; then
-    awk -F= '/name=/ {n=$2} /ip_address=/ {ip=$2} /hw_address=/ {print "  " ip "  " n "  (" $2 ")"}' "$LEASES"
-  else
-    echo "  no address handed out yet (is the mini PC on and set to DHCP?)"
-  fi
+  # Leases outlive the devices: show only those this Mac sees on the cable right now
+  local ip name found=0
+  while read -r ip name; do
+    arp -n "$ip" 2>/dev/null | grep -q ' at [0-9a-f]' || continue
+    echo "  ${ip}  ${name}"
+    found=1
+  done < <(awk -F= '/name=/ {n=$2} /ip_address=/ {print $2, n}' "$LEASES" 2>/dev/null)
+  ((found)) || echo "  not seen yet (is the mini PC on and set to DHCP?)"
 }
 
 # --- Linux: NetworkManager "shared" mode does the address, DHCP and NAT ---
@@ -212,8 +215,7 @@ up() {
   dev=$(link_device)
   say "Cable adapter ${dev}: ${LINK_IP}"
   if [[ $OS == Darwin ]]; then mac_up "$dev"; else linux_up "$dev"; fi
-  say "Done. The mini PC gets an address from ${RANGE_FIRST}-${RANGE_LAST} (check: $0 status)"
-  say "Next: network/llm-bridge.sh start, then on the mini PC NOMAD_LLM_URL=http://${LINK_IP}:11434"
+  say "Done. The mini PC gets an address from ${RANGE_FIRST}-${RANGE_LAST} (check: ./nomad status)"
 }
 
 down() {

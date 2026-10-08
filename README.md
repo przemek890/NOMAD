@@ -34,10 +34,14 @@ NOMAD otwierasz w przeglądarce na komputerze: **http://nomad.local:8080**.
 
    macOS: zainstaluj też Caddy: `brew install caddy` ([Homebrew](https://brew.sh)). Linux: `sudo apt install caddy`.
 2. Połącz mini PC z komputerem kablem Ethernet.
-3. **Na komputerze** uruchom sieć i udostępnij model:
-   - **macOS / Linux:** w Terminalu, w folderze projektu: `network/start.sh` (zapyta o hasło do komputera)
-   - **Windows:** połącz się z Wi‑Fi, kliknij dwa razy `network\start.cmd` i potwierdź okno administratora
+3. **Na komputerze** otwórz Terminal (macOS, Linux) albo PowerShell (Windows) w folderze projektu i wpisz:
 
+   ```bash
+   ./nomad start
+   ```
+
+   To samo polecenie na każdym systemie. macOS i Linux zapytają o hasło do komputera, Windows o zgodę administratora
+   (Windows musi mieć internet, np. Wi‑Fi). Na Windows możesz też kliknąć dwa razy `nomad.cmd`.
    Na końcu zobaczysz adres mini PC, np. `10.77.0.11`.
 4. **Na komputerze** skopiuj projekt na mini PC i zainstaluj go tam (Terminal na macOS / Linux, PowerShell na Windows,
    w folderze, w którym leży folder `NOMAD`; `użytkownik` to Twój login na mini PC, adres z kroku 3):
@@ -57,11 +61,11 @@ NOMAD otwierasz w przeglądarce na komputerze: **http://nomad.local:8080**.
 
 | Sytuacja | Co zrobić |
 |---|---|
-| Uruchomiłeś ponownie komputer | macOS / Linux: `network/start.sh`, Windows: dwuklik w `network\start.cmd` |
+| Uruchomiłeś ponownie komputer | `./nomad start` |
 | Uruchomiłeś ponownie mini PC | nic, NOMAD wstaje sam po kilku minutach |
 | Przepinasz mini PC do innego komputera (np. z Maca do Windowsa) | na nowym komputerze: krok 1 (te same dwa modele) i krok 3; mini PC zostaje bez zmian |
 | Chcesz używać NOMAD | otwórz http://nomad.local:8080 |
-| Chcesz sprawdzić, czy wszystko działa | `tests/smoke.sh nomad.local` |
+| Chcesz sprawdzić, czy wszystko działa | `./nomad test` |
 
 Do czatu AI komputer musi być włączony i nieuśpiony. Wikipedia, mapy, notatki i wyszukiwarka wiedzy działają bez niego.
 
@@ -70,15 +74,16 @@ Do czatu AI komputer musi być włączony i nieuśpiony. Wikipedia, mapy, notatk
 Zainstaluj Debiana 13 bez pulpitu zamiast Windowsa: zostaje ok. 3 GB wolnego RAM.
 `minipc/preseed.cfg` instaluje go automatycznie (**kasuje cały dysk**). Po instalacji wpisz na mini PC `sudo minipc/tune.sh`.
 
-### Pojedyncze kroki (dla zaawansowanych)
+### Polecenie `./nomad`
 
-| | macOS / Linux | Windows |
-|---|---|---|
-| wszystko naraz | `network/start.sh` | `network\start.cmd` |
-| tylko sieć na kablu | `sudo network/link.sh up` | `network\link.cmd up` |
-| tylko model dla mini PC | `network/llm-bridge.sh start` | `network\link.cmd bridge-start` |
-| stan i adres mini PC | `network/link.sh status` | `network\link.cmd status` |
-| cofnięcie zmian | `network/llm-bridge.sh stop`, `sudo network/link.sh down` | `network\link.cmd bridge-stop`, `network\link.cmd down` |
+Działa tak samo na macOS, Linux i Windows (PowerShell):
+
+| Polecenie | Co robi |
+|---|---|
+| `./nomad start` | uruchamia model, sieć na kablu i udostępnia model mini PC |
+| `./nomad status` | pokazuje sieć, adres mini PC i model |
+| `./nomad test` | sprawdza, czy NOMAD działa (na Windows potrzebny [Git](https://git-scm.com)) |
+| `./nomad stop` | wyłącza sieć na kablu i udostępnianie modelu |
 
 Model jest dostępny tylko na kablu. Ustawienia Twojego komputera (np. własna ścieżka do Ollamy lub Caddy) wpisz w `network/local.env`, wzór: `network/local.env.example`.
 
@@ -100,4 +105,4 @@ Lista pobieranych materiałów: `content/sources.txt`. Własne dokumenty dla AI 
 | `make down` | zatrzymuje NOMAD |
 | `make logs` | pokazuje, co się dzieje |
 | `make refresh` | wgrywa zmienione skrypty po `git pull`, bez przebudowy |
-| `tests/smoke.sh [adres]` | sprawdza, czy wszystko działa |
+| `tests/smoke.sh [adres]` | sprawdza, czy wszystko działa (to samo co `./nomad test`) |

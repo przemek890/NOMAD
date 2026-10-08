@@ -1,19 +1,22 @@
-# Windows version of link.sh + llm-bridge.sh: private network on the Ethernet cable between
-# this PC (running the model) and the mini PC (running NOMAD). Start it through link.cmd,
-# it asks for Administrator rights by itself:
+# Windows side of ./nomad (through nomad.cmd), the counterpart of network/*.sh: private network
+# on the Ethernet cable between this PC (running the model) and the mini PC (running NOMAD).
+# Asks for Administrator rights by itself.
 #
-#   network\start.cmd               # everything at once (after a restart too): Ollama, network, bridge
-#   network\link.cmd up             # address 10.77.0.1, DHCP and internet for the mini PC
-#   network\link.cmd bridge-start   # Ollama (127.0.0.1:11434) reachable on the cable only
-#   network\link.cmd status
-#   network\link.cmd bridge-stop
-#   network\link.cmd down
+#   ./nomad start            Ollama, address 10.77.0.1 with DHCP and internet for the mini PC, bridge to Ollama
+#   ./nomad stop             undo the network and the bridge
+#   ./nomad status           network, mini PC address, bridge
+#   ./nomad test [address]   check a running NOMAD (needs bash: Git for Windows or WSL)
+#   single steps: up, down, bridge-start, bridge-stop
 #
 # Uses Internet Connection Sharing (needs a working internet adapter, e.g. Wi-Fi).
 # The bridge forwards the whole Ollama API (no endpoint filtering, unlike llm-bridge.sh).
+[CmdletBinding(PositionalBinding = $false)]
 param(
-  [ValidateSet('start', 'up', 'down', 'status', 'bridge-start', 'bridge-stop')]
-  [string]$Action = 'status',
+  [Parameter(Position = 0)]
+  [ValidateSet('start', 'stop', 'status', 'test', 'up', 'down', 'bridge-start', 'bridge-stop')]
+  [string]$Action = 'start',
+  [Parameter(Position = 1)]
+  [string]$Address = 'nomad.local',
   [string]$Adapter = $env:NOMAD_LINK_IF
 )
 $ErrorActionPreference = 'Stop'
@@ -84,8 +87,7 @@ function Up {
     if ($s.Name -eq $wan.Name) { $s.Config.EnableSharing(0) }
     if ($s.Name -eq $link.Name) { $s.Config.EnableSharing(1) }
   }
-  Say 'Done. The mini PC gets an address 10.77.0.x (check: link.cmd status)'
-  Say "Next: link.cmd bridge-start, then on the mini PC NOMAD_LLM_URL=http://${LinkIp}:$Port"
+  Say 'Done. The mini PC gets an address 10.77.0.x (check: ./nomad status)'
 }
 
 function Down {
@@ -101,7 +103,7 @@ function Down {
 
 function Start-Bridge {
   Assert-Admin
-  if (-not (Get-NetIPAddress -IPAddress $LinkIp -ErrorAction SilentlyContinue)) { Die "No $LinkIp here. First: link.cmd up" }
+  if (-not (Get-NetIPAddress -IPAddress $LinkIp -ErrorAction SilentlyContinue)) { Die "No $LinkIp here. First: ./nomad start" }
   if (-not (Test-Ollama)) { Die "Ollama does not answer at 127.0.0.1:$Port. Start Ollama first" }
   Set-Service iphlpsvc -StartupType Automatic
   Start-Service iphlpsvc
@@ -149,6 +151,21 @@ function Start-All {
   Say 'NOMAD: http://nomad.local:8080'
 }
 
+function Stop-All {
+  Stop-Bridge
+  Down
+}
+
+# The same smoke test as on macOS and Linux, through bash from Git for Windows or WSL
+function Test-Nomad {
+  if (-not (Get-Command bash -ErrorAction SilentlyContinue)) {
+    Die 'The test needs bash: install Git for Windows (git-scm.com) or WSL, or run tests/smoke.sh on the mini PC'
+  }
+  Push-Location (Split-Path $PSScriptRoot)
+  try { bash tests/smoke.sh $Address } finally { Pop-Location }
+  exit $LASTEXITCODE
+}
+
 function Status {
   $link = Get-LinkAdapter
   $ip = (Get-NetIPAddress -InterfaceIndex $link.ifIndex -AddressFamily IPv4 -ErrorAction SilentlyContinue).IPAddress -join ', '
@@ -166,6 +183,8 @@ function Status {
 
 switch ($Action) {
   'start' { Start-All }
+  'stop' { Stop-All }
+  'test' { Test-Nomad }
   'up' { Up }
   'down' { Down }
   'status' { Status }

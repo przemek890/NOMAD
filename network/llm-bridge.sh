@@ -78,7 +78,7 @@ EOF
 start() {
   running && { say "Already running: http://${LINK_IP}:${PORT}"; return; }
   [[ -x $CADDY ]] || die "Caddy not found. Install it (https://caddyserver.com/docs/install) or set CADDY in network/local.env"
-  { ifconfig 2>/dev/null || ip -4 addr; } | grep -q "inet ${LINK_IP}[ /]" || die "No ${LINK_IP} here. First: sudo network/link.sh up"
+  { ifconfig 2>/dev/null || ip -4 addr; } | grep -q "inet ${LINK_IP}[ /]" || die "No ${LINK_IP} here. First: ./nomad start"
   curl -fsS -m 3 "http://${UPSTREAM}/api/version" >/dev/null \
     || die "Ollama does not answer at ${UPSTREAM}. Start Ollama first"
   mkdir -p "$DIR"
