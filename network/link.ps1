@@ -21,6 +21,8 @@ $ErrorActionPreference = 'Stop'
 $LinkIp = '10.77.0.1'
 $Port = 11434
 $IcsParams = 'HKLM:\SYSTEM\CurrentControlSet\Services\SharedAccess\Parameters'
+# Without this Windows may drop Internet Connection Sharing after a restart
+$IcsPersist = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\SharedAccess'
 $FirewallRule = 'NOMAD LLM bridge'
 
 function Say($Text) { Write-Host "[link] $Text" -ForegroundColor Green }
@@ -75,6 +77,7 @@ function Up {
   Say "Cable adapter $($link.Name): $LinkIp, internet through $($wan.Name)"
   Set-ItemProperty $IcsParams -Name ScopeAddress -Value $LinkIp
   Set-ItemProperty $IcsParams -Name ScopeAddressBackup -Value $LinkIp
+  New-ItemProperty $IcsPersist -Name EnableRebootPersistConnection -Value 1 -PropertyType DWord -Force | Out-Null
   Disable-Sharing
   Restart-Service SharedAccess
   foreach ($s in Get-Sharing) {
@@ -89,6 +92,7 @@ function Down {
   Assert-Admin
   Disable-Sharing
   Remove-ItemProperty $IcsParams -Name ScopeAddress, ScopeAddressBackup -ErrorAction SilentlyContinue
+  Remove-ItemProperty $IcsPersist -Name EnableRebootPersistConnection -ErrorAction SilentlyContinue
   $link = Get-LinkAdapter
   Remove-NetIPAddress -InterfaceIndex $link.ifIndex -IPAddress $LinkIp -Confirm:$false -ErrorAction SilentlyContinue
   Set-NetIPInterface -InterfaceIndex $link.ifIndex -Dhcp Enabled

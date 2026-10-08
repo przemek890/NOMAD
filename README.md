@@ -53,6 +53,7 @@ NOMAD otwierasz w przeglądarce na komputerze: **http://nomad.local:8080**.
 |---|---|
 | Uruchomiłeś ponownie komputer | macOS / Linux: `network/start.sh`, Windows: dwuklik w `network\start.cmd` |
 | Uruchomiłeś ponownie mini PC | nic, NOMAD wstaje sam po kilku minutach |
+| Przepinasz mini PC do innego komputera (np. z Maca do Windowsa) | na nowym komputerze: krok 1 (te same dwa modele) i krok 3; mini PC zostaje bez zmian |
 | Chcesz używać NOMAD | otwórz http://nomad.local:8080 |
 | Chcesz sprawdzić, czy wszystko działa | `tests/smoke.sh nomad.local` |
 
