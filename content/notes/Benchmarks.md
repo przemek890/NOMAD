@@ -35,6 +35,27 @@ Pytania i oczekiwane odpowiedzi są w tabeli „AI: poprawność odpowiedzi” n
 zgadza się z poradnikiem (NHS, CDC, Military Medicine), nie wymyśla dawek ani leków, a po polsku odpowiada po polsku.
 Szybkość: czas do pierwszego tokenu i tokeny na sekundę z tabeli „AI: szybkość modelu”.
 
+## Na prezentację: pytania do AI
+
+W **AI Assistant**: model `local-qwen`, **Knowledge Base** włączone, **Thinking** wyłączone. Zacznij od pytania 1,
+żeby model załadował się do pamięci (pierwsza odpowiedź jest wolniejsza).
+
+| # | Zapytaj | Co pokazuje | Dobra odpowiedź |
+|---|---|---|---|
+| 1 | Jaka jest stolica Polski i jaka rzeka przez nią płynie? | model działa na komputerze, szybko (~6 s) | Warszawa, Wisła |
+| 2 | According to the NHS, what should I do if I miss a dose of warfarin? | odpowiedź z bazy wiedzy (NHS) | weź, gdy sobie przypomnisz; jeśli dopiero następnego dnia – pomiń; nigdy podwójnej dawki |
+| 3 | Co zrobić, gdy pominę dawkę warfaryny? Odpowiedz po polsku. | angielskie źródła, odpowiedź po polsku | to samo co w 2, po polsku |
+| 4 | What is the first aid for a snake bite in the field? | poradniki medyczne (CDC, Military Medicine) | unieruchom, spokój, szybko do szpitala; nie nacinaj, nie wysysaj |
+| 5 | How do you recognise and treat heat stroke? | j.w. | wysoka temperatura, splątanie; natychmiast chłodzić, cień, woda, pomoc medyczna |
+
+Potem pokaż, że działa bez internetu i bez AI:
+
+| # | Zrób | Co pokazuje |
+|---|---|---|
+| 6 | wyłącz Wi‑Fi na komputerze, zadaj pytanie 2 jeszcze raz | AI i baza wiedzy działają offline |
+| 7 | **Knowledge Search**: `snake bite first aid` | wyszukiwanie po znaczeniu bez modelu AI, w ułamku sekundy |
+| 8 | zamknij Ollamę na komputerze, powtórz 7, otwórz **Information Library** i **Maps** | Wikipedia, mapy i wyszukiwarka działają bez komputera z modelem |
+
 <!-- results: written by ./nomad report, do not edit below -->
 
 ## Ostatnie wyniki
