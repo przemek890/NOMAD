@@ -19,19 +19,18 @@ Before the first install:
 - **Windows:** in PowerShell as administrator run `wsl --install -d Ubuntu` and restart. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) and turn on **Settings > Resources > WSL integration > Ubuntu**. Run the command below in the **Ubuntu** app.
 - **Raspberry Pi, Ubuntu, Debian:** nothing; Docker and the tools are installed for you.
 
+The repository is private, so the installer needs a read-only token: on GitHub open **Settings > Developer settings > Fine-grained tokens > Generate new token**, choose **Only select repositories: NOMAD** and **Contents: Read-only**.
+
 Install and start NOMAD:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/przemek890/NOMAD/main/install.sh | bash
+TOKEN=github_pat_...
+curl -fsSL -H "Authorization: token $TOKEN" https://raw.githubusercontent.com/przemek890/NOMAD/main/install.sh | NOMAD_GITHUB_TOKEN=$TOKEN bash
 ```
 
 NOMAD goes to `~/nomad` on macOS and `/opt/nomad` elsewhere, and starts again after a reboot. Run the same command to update it. When it finishes, open **https://nomad.localhost** on macOS and Windows, or `http://DEVICE-ADDRESS:8080` from another device.
 
-By default, chat uses an LLM server on the same machine at `http://localhost:11434`. Use another one with `NOMAD_LLM_URL`:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/przemek890/NOMAD/main/install.sh | NOMAD_LLM_URL=http://192.168.1.20:1234 bash
-```
+Chat uses an LLM server on the same machine at `http://localhost:11434` unless you add another address, e.g. `NOMAD_LLM_URL=http://192.168.1.20:1234` before `bash`.
 
 ## Mini PC wired to a Mac
 
@@ -44,7 +43,8 @@ NOMAD runs on the mini PC, connected to the Mac with an Ethernet cable; the LLM 
 3. On the mini PC:
 
    ```bash
-   curl -fsSL https://raw.githubusercontent.com/przemek890/NOMAD/main/install.sh | NOMAD_LLM_URL=http://192.168.2.1:11434 bash
+   TOKEN=github_pat_...
+   curl -fsSL -H "Authorization: token $TOKEN" https://raw.githubusercontent.com/przemek890/NOMAD/main/install.sh | NOMAD_GITHUB_TOKEN=$TOKEN NOMAD_LLM_URL=http://192.168.2.1:11434 bash
    ```
 
 4. On the Mac, open the address the installer prints at the end.

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Installs or updates NOMAD Box and starts it:
 #   curl -fsSL https://raw.githubusercontent.com/przemek890/NOMAD/main/install.sh | bash
-# Options (environment): NOMAD_LLM_URL (LLM server for chat), NOMAD_DIR (install location)
+# Options (environment): NOMAD_LLM_URL (LLM server for chat), NOMAD_DIR (install location),
+#   NOMAD_GITHUB_TOKEN (read-only token for a private repository)
 set -Eeuo pipefail
 
 readonly REPO=https://github.com/przemek890/NOMAD.git
@@ -61,16 +62,25 @@ check_page_size() {
   die "Switched to the kernel with 4 KB pages. Reboot and run the same command again."
 }
 
+repo_url() {
+  if [[ -n ${NOMAD_GITHUB_TOKEN:-} ]]; then
+    printf 'https://x-access-token:%s@%s' "$NOMAD_GITHUB_TOKEN" "${REPO#https://}"
+  else
+    printf '%s' "$REPO"
+  fi
+}
+
 get_repo() {
   if [[ -d $DIR/.git ]]; then
     say "Updating ${DIR}"
+    [[ -z ${NOMAD_GITHUB_TOKEN:-} ]] || git -C "$DIR" remote set-url origin "$(repo_url)"
     git -C "$DIR" pull --ff-only --quiet
     return
   fi
   [[ ! -e $DIR || -z $(ls -A "$DIR") ]] || die "${DIR} exists and is not NOMAD; choose another folder with NOMAD_DIR"
   say "Downloading NOMAD to ${DIR}"
   [[ -w ${DIR%/*} ]] || sudo install -d -o "$(id -u)" -g "$(id -g)" "$DIR"
-  git clone --quiet "$REPO" "$DIR"
+  git clone --quiet "$(repo_url)" "$DIR"
 }
 
 # HTTPS at nomad.localhost only helps a browser on the same machine (macOS, Windows)
