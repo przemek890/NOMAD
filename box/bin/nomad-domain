@@ -36,7 +36,7 @@ write_caddyfile() {
     each_app app_site
   } >"${CADDYFILE}.tmp"
   mv "${CADDYFILE}.tmp" "$CADDYFILE"
-  log "Caddyfile dla https://${NOMAD_DOMAIN} zapisany w ${CADDYFILE}"
+  log "Caddyfile for https://${NOMAD_DOMAIN} written to ${CADDYFILE}"
 }
 
 service_for() {
@@ -54,7 +54,7 @@ link_app() {
 link_apps() {
   source "$SECRETS_FILE"
   each_app link_app
-  log "Linki aplikacji w panelu wskazują na https://*.${NOMAD_DOMAIN}"
+  log "App links in the dashboard point to https://*.${NOMAD_DOMAIN}"
 }
 
 app_host() {
@@ -73,5 +73,5 @@ case ${1:-} in
   caddyfile) write_caddyfile ;;
   links) link_apps ;;
   hosts) hosts "${2:-}" ;;
-  *) fail "Użycie: nomad-domain caddyfile|links|hosts [ip]" ;;
+  *) fail "Usage: nomad-domain caddyfile|links|hosts [ip]" ;;
 esac

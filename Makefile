@@ -15,54 +15,54 @@ IP ?= 127.0.0.1
 
 .PHONY: help init builder images box build image up down restart logs logs-admin status preload shell hosts trust export import prune clean
 
-help: ## Wyświetla listę poleceń
+help: ## Show available commands
 	@grep -E '^[a-z-]+:.*## ' $(firstword $(MAKEFILE_LIST)) | awk 'BEGIN {FS = ":.*## "} {printf "  \033[36m%-11s\033[0m %s\n", $$1, $$2}'
 
 .env:
 	cp .env.example .env
 
-init: .env ## Tworzy plik .env z szablonu
+init: .env ## Create .env from the template
 
 builder:
 	@docker buildx inspect $(BUILDER) >/dev/null 2>&1 || docker buildx create --name $(BUILDER) --driver docker-container >/dev/null
 
-images: builder ## Buduje obrazy NOMAD do .build/images (PLATFORM=linux/arm64 dla innej architektury)
+images: builder ## Build NOMAD images into .build/images (PLATFORM=linux/arm64 for another architecture)
 	$(BAKE) images
 
-box: builder ## Buduje obraz nomad-box z gotowymi obrazami w środku
+box: builder ## Build the nomad-box image with the NOMAD images inside
 	$(BAKE) box
 
-build: images box ## Pełna budowa (images + box)
+build: images box ## Full build (images + box)
 
 image:
 	@docker image inspect $(NOMAD_BOX_IMAGE) >/dev/null 2>&1 || $(MAKE) build
 
-up: init image ## Buduje (jeśli trzeba) i uruchamia NOMAD z treściami z content/ (domyślne polecenie: make)
+up: init image ## Build if needed and start NOMAD with the content from content/ (default: make)
 	docker compose up --detach --wait
 	@$(if $(NOMAD_DOMAIN),$(MAKE) --no-print-directory trust)
-	@echo "NOMAD działa: $(URL). Treści pobierają się w tle, postęp: make logs"
+	@echo "NOMAD is running: $(URL). Content downloads in the background, progress: make logs"
 
-down: ## Zatrzymuje NOMAD (dane zostają)
+down: ## Stop NOMAD (data is kept)
 	docker compose down
 
-restart: down up ## Restart
+restart: down up ## Restart NOMAD
 
-logs: ## Logi kontenera nomad-box
+logs: ## Follow nomad-box logs
 	docker compose logs --follow
 
-logs-admin: ## Logi Command Center
+logs-admin: ## Follow Command Center logs
 	$(BOX) docker logs --follow nomad_admin
 
-status: ## Stan usług wewnątrz nomad-box
+status: ## Show services inside nomad-box
 	$(BOX) docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'
 
-preload: ## Ponownie instaluje treści z content/ bez restartu
+preload: ## Install content from content/ again without a restart
 	$(BOX) nomad-preload
 
-shell: ## Powłoka wewnątrz nomad-box
+shell: ## Open a shell inside nomad-box
 	$(BOX) bash
 
-hosts: ## Wypisuje linię do /etc/hosts dla domeny (IP=adres dla innych urządzeń)
+hosts: ## Print the /etc/hosts line for the domain (IP=address for other devices)
 	@$(BOX) nomad-domain hosts $(IP)
 
 ifeq ($(shell uname -s),Darwin)
@@ -73,22 +73,22 @@ else
 trust_ca = sudo cp $(1) /usr/local/share/ca-certificates/nomad-root-ca.crt && sudo update-ca-certificates
 endif
 
-trust: ## Dodaje certyfikat HTTPS do zaufanych w systemie (tylko raz, poprosi o hasło)
+trust: ## Trust the HTTPS certificate system-wide (once, asks for your password)
 	@mkdir -p dist
 	@for i in $$(seq 30); do docker compose cp proxy:$(CA_PATH) $(ROOT_CA).new >/dev/null 2>&1 && break; sleep 1; done
-	@test -f $(ROOT_CA).new || { echo "Proxy HTTPS nie wystawił certyfikatu. Sprawdź: docker compose logs proxy"; exit 1; }
+	@test -f $(ROOT_CA).new || { echo "The HTTPS proxy has not issued a certificate. Check: docker compose logs proxy"; exit 1; }
 	@if cmp -s $(ROOT_CA).new $(ROOT_CA); then rm $(ROOT_CA).new; \
-	else echo "Dodawanie certyfikatu HTTPS do zaufanych"; $(call trust_ca,$(ROOT_CA).new) && mv $(ROOT_CA).new $(ROOT_CA); fi
+	else echo "Trusting the HTTPS certificate"; $(call trust_ca,$(ROOT_CA).new) && mv $(ROOT_CA).new $(ROOT_CA); fi
 
-export: ## Zapisuje obraz do dist/nomad-box.tar.gz (przeniesienie na inny komputer)
+export: ## Save the image to dist/nomad-box.tar.gz (to move it to another machine)
 	@mkdir -p dist
 	docker save $(NOMAD_BOX_IMAGE) | gzip > $(ARCHIVE)
 
-import: ## Wczytuje obraz z dist/nomad-box.tar.gz
+import: ## Load the image from dist/nomad-box.tar.gz
 	gunzip --stdout $(ARCHIVE) | docker load
 
-prune: ## Czyści cache budowania (zwalnia kilka GB po make build)
+prune: ## Clear the build cache (frees several GB after make build)
 	docker buildx prune --builder $(BUILDER) --all --force
 
-clean: ## Usuwa kontener i wewnętrzny silnik Docker (katalog data zostaje)
+clean: ## Remove the container and the inner Docker engine (data/ is kept)
 	docker compose down --volumes

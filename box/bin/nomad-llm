@@ -6,7 +6,7 @@ source /usr/local/lib/nomad-box/common.sh
 readonly TAGS_PORT=$((LLM_ROUTER_PORT + 1))
 readonly CONFIG=/run/nomad-llm.caddyfile
 
-# NOMAD_OLLAMA_URL widziany z kontenera: localhost to komputer, na którym działa Docker
+# NOMAD_OLLAMA_URL as seen from the container: localhost is the machine running Docker
 chat_upstream() {
   sed -E 's#://(localhost|127\.0\.0\.1)([:/]|$)#://host.docker.internal\2#; s#/$##' <<<"$NOMAD_OLLAMA_URL"
 }
@@ -40,7 +40,7 @@ write_config() {
 EOF
 }
 
-# Modele do czatu z NOMAD_OLLAMA_URL i modele do embeddingów z wbudowanej Ollamy
+# Chat models from NOMAD_OLLAMA_URL plus embedding models from the bundled Ollama
 tags() {
   local line body
   while IFS= read -r line && [[ -n ${line%$'\r'} ]]; do :; done
@@ -53,7 +53,7 @@ tags() {
 
 serve() {
   write_config
-  log "LLM do czatu: ${NOMAD_OLLAMA_URL}; embeddingi: wbudowana Ollama (${EMBED_MODEL})"
+  log "Chat LLM: ${NOMAD_OLLAMA_URL}; embeddings: bundled Ollama (${EMBED_MODEL})"
   socat "TCP-LISTEN:${TAGS_PORT},bind=127.0.0.1,fork,reuseaddr" EXEC:"nomad-llm tags" &
   exec caddy run --adapter caddyfile --config "$CONFIG"
 }
@@ -61,5 +61,5 @@ serve() {
 case ${1:-} in
   serve) serve ;;
   tags) tags ;;
-  *) fail "Użycie: nomad-llm serve|tags" ;;
+  *) fail "Usage: nomad-llm serve|tags" ;;
 esac

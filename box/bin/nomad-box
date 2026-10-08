@@ -4,15 +4,15 @@ set -Eeuo pipefail
 source /usr/local/lib/nomad-box/common.sh
 
 start_engine() {
-  log "Uruchamianie wewnętrznego Docker Engine"
+  log "Starting the inner Docker Engine"
   dockerd-entrypoint.sh dockerd --host=unix:///var/run/docker.sock >/var/log/dockerd.log 2>&1 &
   ENGINE_PID=$!
   trap stop_all TERM INT
-  wait_for 120 docker info || fail "Docker Engine nie wystartował. Czy kontener działa z --privileged? Zobacz /var/log/dockerd.log"
+  wait_for 120 docker info || fail "Docker Engine did not start. Is the container running with --privileged? See /var/log/dockerd.log"
 }
 
 stop_all() {
-  log "Zatrzymywanie NOMAD"
+  log "Stopping NOMAD"
   stack stop --timeout 30 || true
   kill -TERM "$ENGINE_PID" 2>/dev/null || true
   wait "$ENGINE_PID" || true
@@ -23,12 +23,12 @@ load_images() {
   local archive ref id
   shopt -s nullglob
   local archives=("$IMAGES_DIR"/*.tar)
-  ((${#archives[@]})) || fail "Brak obrazów w ${IMAGES_DIR}. Uruchom: make build"
+  ((${#archives[@]})) || fail "No images in ${IMAGES_DIR}. Run: make build"
   for archive in "${archives[@]}"; do
     read -r ref id < <(tar -xOf "$archive" manifest.json \
       | jq -r '.[0] | "\(.RepoTags[0] // "-") sha256:\(.Config | sub(".*/"; "") | rtrimstr(".json"))"')
     [[ $(docker image inspect --format '{{.Id}}' "$ref" 2>/dev/null) == "$id" ]] && continue
-    log "Wczytywanie obrazu ${ref}"
+    log "Loading image ${ref}"
     docker load --quiet --input "$archive"
   done
 }
@@ -37,9 +37,9 @@ ensure_secrets() {
   mkdir -p "${NOMAD_HOME}"/{storage/logs,storage/kb_uploads,mysql,redis}
   [[ -s $SECRETS_FILE ]] && return
   if [[ -n $(ls -A "${NOMAD_HOME}/mysql") ]]; then
-    fail "Brak ${SECRETS_FILE}, a katalog mysql zawiera dane. Przywróć plik z hasłami albo usuń ${NOMAD_HOME}/mysql."
+    fail "${SECRETS_FILE} is missing but the mysql directory has data. Restore the secrets file or delete ${NOMAD_HOME}/mysql."
   fi
-  log "Generowanie sekretów w ${SECRETS_FILE}"
+  log "Generating secrets in ${SECRETS_FILE}"
   (
     umask 077
     cat >"$SECRETS_FILE" <<EOF
@@ -56,15 +56,15 @@ main() {
   ensure_secrets
   nomad-llm serve &
   nomad-domain caddyfile
-  log "Uruchamianie stosu Project NOMAD ${NOMAD_VERSION}"
+  log "Starting Project NOMAD ${NOMAD_VERSION}"
   stack up --detach --remove-orphans
   docker image prune --force >/dev/null
   if wait_for 600 curl -fsS "${API_URL}/health"; then
-    nomad-domain links || log "Nie udało się ustawić linków HTTPS aplikacji"
-    log "Command Center gotowy: ${NOMAD_URL}"
+    nomad-domain links || log "Could not set the HTTPS app links"
+    log "Command Center ready: ${NOMAD_URL}"
     nomad-preload &
   else
-    log "Command Center jeszcze nie odpowiada. Sprawdź: make logs-admin"
+    log "Command Center is not responding yet. Check: make logs-admin"
   fi
   wait "$ENGINE_PID"
 }

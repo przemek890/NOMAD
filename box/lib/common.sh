@@ -2,7 +2,7 @@ readonly COMPOSE_FILE=/opt/nomad-box/compose/nomad.yaml
 readonly IMAGES_DIR=/opt/nomad-box/images
 readonly SECRETS_FILE="${NOMAD_HOME}/secrets.env"
 readonly API_URL=http://localhost:8080/api
-# Router LLM: embeddingi liczy wbudowana Ollama (nomad_ollama), czat idzie do NOMAD_OLLAMA_URL
+# LLM router: the bundled Ollama (nomad_ollama) computes embeddings, chat goes to NOMAD_OLLAMA_URL
 readonly LLM_ROUTER_PORT=11435
 readonly LLM_ROUTER_URL="http://host.docker.internal:${LLM_ROUTER_PORT}"
 readonly EMBED_OLLAMA=http://127.0.0.1:11434

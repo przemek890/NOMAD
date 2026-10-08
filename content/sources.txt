@@ -1,24 +1,24 @@
-# Treści instalowane automatycznie przy każdym starcie (już pobrane są pomijane).
-# Jedna pozycja w linii: <rodzaj> <wartość>.
+# Content installed on every start (anything already downloaded is skipped).
+# One entry per line: <kind> <value>.
 
-# Usługi z panelu NOMAD
+# NOMAD dashboard services
 service nomad_kiwix_server
 service nomad_flatnotes
 service nomad_cyberchef
 
-# Pliki ZIM z download.kiwix.org; adres bez daty i .zim oznacza najnowszą wersję
+# ZIM files from download.kiwix.org; a URL without a date and .zim means the latest version
 zim https://download.kiwix.org/zim/wikipedia/wikipedia_pl_all_nopic
 
-# Kolekcje NOMAD (Easy Setup): <kategoria>-<poziom>; wyższy poziom zawiera niższe
+# NOMAD collections (Easy Setup): <category>-<tier>; a higher tier includes the lower ones
 category medicine-comprehensive
 category diy-standard
 category agriculture-essential
 
-# Mapy krajów (kod ISO)
+# Country maps (ISO code)
 map PL
 
-# Pliki ZIM indeksowane dla asystenta AI (nazwa bez daty); pozostałe są tylko do przeglądania.
-# Dokumenty z content/knowledge są indeksowane zawsze.
+# ZIM files indexed for the AI assistant (name without the date); the rest are browse-only.
+# Documents in content/knowledge are always indexed.
 embed nhs.uk_en_medicines
 embed zimgit-medicine_en
 embed fas-military-medicine_en
