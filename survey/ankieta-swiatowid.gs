@@ -1,21 +1,5 @@
-/**
- * Ankieta do projektu „Światowid — wiedza kryzysowa” (nr 6/MMS_SFOK/2026).
- *
- * Jak użyć:
- * 1. Wejdź na https://script.google.com i kliknij „Nowy projekt”.
- * 2. Usuń przykładowy kod, wklej cały ten plik i zapisz (Ctrl/Cmd + S).
- * 3. U góry wybierz funkcję „utworzAnkiete” i kliknij „Uruchom”. Zatwierdź uprawnienia.
- * 4. W „Dzienniku wykonywania” pojawią się linki: do wypełniania (dla uczestników),
- *    do edycji (dla Ciebie) i do arkusza z odpowiedziami.
- *
- * Wszystkie pytania są jednokrotnego wyboru. Ankieta jest anonimowa: nie zbiera imion ani
- * adresów e-mail. Quiz ma zaznaczone poprawne odpowiedzi; w zakładce „Odpowiedzi” widać,
- * ile osób odpowiedziało poprawnie na każde pytanie.
- */
-
 const TAK_NIE_4 = ['Zdecydowanie tak', 'Raczej tak', 'Raczej nie', 'Zdecydowanie nie'];
 
-// Metryczka, 30 pytań wiedzowych w kolejności prelekcji i na końcu pytanie o rezultaty z wniosku
 function utworzAnkiete() {
   const form = FormApp.create('Projekt Światowid — wiedza kryzysowa')
     .setIsQuiz(true)
@@ -27,20 +11,16 @@ function utworzAnkiete() {
   metryczka(form);
   quiz(form);
 
-  // Rezultaty z wniosku (s. 7–8): 80% uczestników deklaruje wzrost wiedzy, min. 30 osób deklaruje wzrost świadomości
   form.addSectionHeaderItem().setTitle('Na koniec');
   jednokrotny(form, 'Czy prelekcja zwiększyła Twoją wiedzę i świadomość o tym, jak zachować dostęp do ważnych informacji w sytuacjach kryzysowych?',
     TAK_NIE_4);
 
-  // Odpowiedzi trafiają do arkusza Google, z którego zrobisz zestawienie wyników do sprawozdania
   const sheet = SpreadsheetApp.create(form.getTitle() + ' (odpowiedzi)');
   form.setDestination(FormApp.DestinationType.SPREADSHEET, sheet.getId());
 
   Logger.log('Dla uczestników: %s\nEdycja: %s\nWyniki: %s', form.getPublishedUrl(), form.getEditUrl(), sheet.getUrl());
 }
 
-// Quiz w kolejności prelekcji (tytuły części to tytuły slajdów), a potem pokazu NOMAD.
-// Pytania ABCD o podobnej długości odpowiedzi; poprawne są zaznaczone w trybie testu.
 function quiz(form) {
   sekcja(form, 'Danych przybywa na świecie', 3);
 
@@ -271,7 +251,6 @@ function sekcja(form, tytul, liczba) {
     .setHelpText(liczba + (liczba >= 2 && liczba <= 4 ? ' pytania' : ' pytań') + '. W każdym tylko jedna odpowiedź jest poprawna.');
 }
 
-// Metryczka: kim jest uczestnik, płeć, a dla uczniów klasa i profil
 function metryczka(form) {
   jednokrotny(form, 'Kim jesteś?',
     ['Uczeń / uczennica', 'Nauczyciel / nauczycielka', 'Inna osoba']);
@@ -289,7 +268,6 @@ function jednokrotny(form, tytul, odpowiedzi) {
     .setRequired(true);
 }
 
-// Odpowiedź zapisana jako [tekst, true] jest poprawna
 function pytanieQuizowe(form, tytul, odpowiedzi) {
   const item = form.addMultipleChoiceItem();
   item.setTitle(tytul)
