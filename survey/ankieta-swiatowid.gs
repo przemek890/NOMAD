@@ -1,78 +1,28 @@
 /**
- * Ankiety do projektu „Światowid — wiedza kryzysowa” (nr 6/MMS_SFOK/2026).
+ * Ankieta do projektu „Światowid — wiedza kryzysowa” (nr 6/MMS_SFOK/2026).
  *
  * Jak użyć:
  * 1. Wejdź na https://script.google.com i kliknij „Nowy projekt”.
  * 2. Usuń przykładowy kod, wklej cały ten plik i zapisz (Ctrl/Cmd + S).
- * 3. U góry wybierz funkcję „utworzAnkiety” i kliknij „Uruchom”. Zatwierdź uprawnienia.
+ * 3. U góry wybierz funkcję „utworzAnkiete” i kliknij „Uruchom”. Zatwierdź uprawnienia.
  * 4. W „Dzienniku wykonywania” pojawią się linki: do wypełniania (dla uczestników),
  *    do edycji (dla Ciebie) i do arkusza z odpowiedziami.
  *
- * Wszystkie pytania są jednokrotnego wyboru. Ankiety są anonimowe: nie zbierają imion
- * ani adresów e-mail. Ankieta po prelekcji zawiera quiz; w zakładce „Odpowiedzi” widać,
+ * Wszystkie pytania są jednokrotnego wyboru. Ankieta jest anonimowa: nie zbiera imion ani
+ * adresów e-mail. Quiz ma zaznaczone poprawne odpowiedzi; w zakładce „Odpowiedzi” widać,
  * ile osób odpowiedziało poprawnie na każde pytanie.
  */
 
-const TYTUL = 'Projekt Światowid — wiedza kryzysowa';
 const TAK_NIE_4 = ['Zdecydowanie tak', 'Raczej tak', 'Raczej nie', 'Zdecydowanie nie'];
 
-function utworzAnkiety() {
-  const przed = ankietaPrzed();
-  const po = ankietaPo();
-  Logger.log('ANKIETA PRZED PRELEKCJĄ\n  dla uczestników: %s\n  edycja: %s\n  wyniki: %s',
-    przed.form.getPublishedUrl(), przed.form.getEditUrl(), przed.sheet.getUrl());
-  Logger.log('ANKIETA PO PRELEKCJI\n  dla uczestników: %s\n  edycja: %s\n  wyniki: %s',
-    po.form.getPublishedUrl(), po.form.getEditUrl(), po.sheet.getUrl());
-}
-
-// Przed prelekcją: punkt wyjścia do porównania i wybór treści do biblioteki offline (wniosek, s. 6)
-function ankietaPrzed() {
-  const form = nowaAnkieta('Światowid — przed prelekcją');
-
-  metryczka(form);
-
-  jednokrotny(form, 'Gdyby jutro przez cały dzień nie było prądu ani internetu, czy wiedział(a)byś, skąd wziąć mapę okolicy, instrukcję pierwszej pomocy lub potrzebne informacje?',
-    TAK_NIE_4);
-
-  skala(form, 'Jak oceniasz swoją wiedzę o tym, jak zachować dostęp do informacji bez internetu i prądu?',
-    'Nic nie wiem', 'Wiem bardzo dużo');
-
-  jednokrotny(form, 'Gdzie dziś trzymasz najważniejsze dla Ciebie informacje (mapy, instrukcje, notatki do nauki)?', [
-    'Tylko w internecie (strony, chmura, aplikacje online)',
-    'Na telefonie lub komputerze, także bez internetu',
-    'Na papierze',
-    'Nie mam takich informacji',
-  ]);
-
-  jednokrotny(form, 'Czy zdarzyło Ci się, że przez awarię prądu lub internetu nie mogłeś/aś znaleźć potrzebnej informacji?',
-    ['Tak, wiele razy', 'Tak, raz lub dwa razy', 'Nie']);
-
-  jednokrotny(form, 'Czy masz w domu radio na baterie lub powerbank na wypadek awarii prądu?',
-    ['Mam jedno i drugie', 'Tylko powerbank', 'Tylko radio na baterie', 'Nie mam żadnego']);
-
-  jednokrotny(form, 'Do czego najczęściej używał(a)byś szkolnej biblioteki offline?', [
-    'Do nauki i przygotowania do matury',
-    'Do sprawdzania informacji o zdrowiu i pierwszej pomocy',
-    'Do map i planowania tras',
-    'Z ciekawości, do przeglądania Wikipedii',
-    'Raczej nie korzystał(a)bym',
-  ]);
-
-  jednokrotny(form, 'Która treść jest według Ciebie NAJWAŻNIEJSZA w szkolnej bibliotece offline?', [
-    'Wikipedia po polsku',
-    'Pierwsza pomoc i zdrowie',
-    'Mapy okolicy (Tarnów i powiat)',
-    'Materiały do nauki i matury',
-    'Poradniki praktyczne (naprawy, majsterkowanie)',
-    'Żywność, uprawy i przetrwanie',
-  ]);
-
-  return { form, sheet: arkusz(form) };
-}
-
-// Po prelekcji: metryczka, 30 pytań wiedzowych w kolejności prelekcji i na końcu pytanie o rezultaty z wniosku
-function ankietaPo() {
-  const form = nowaAnkieta('Światowid — po prelekcji').setIsQuiz(true);
+// Metryczka, 30 pytań wiedzowych w kolejności prelekcji i na końcu pytanie o rezultaty z wniosku
+function utworzAnkiete() {
+  const form = FormApp.create('Projekt Światowid — wiedza kryzysowa')
+    .setIsQuiz(true)
+    .setCollectEmail(false)
+    .setAllowResponseEdits(false)
+    .setProgressBar(true)
+    .setConfirmationMessage('Dziękujemy! Twoja odpowiedź została zapisana.');
 
   metryczka(form);
   quiz(form);
@@ -82,7 +32,11 @@ function ankietaPo() {
   jednokrotny(form, 'Czy prelekcja zwiększyła Twoją wiedzę i świadomość o tym, jak zachować dostęp do ważnych informacji w sytuacjach kryzysowych?',
     TAK_NIE_4);
 
-  return { form, sheet: arkusz(form) };
+  // Odpowiedzi trafiają do arkusza Google, z którego zrobisz zestawienie wyników do sprawozdania
+  const sheet = SpreadsheetApp.create(form.getTitle() + ' (odpowiedzi)');
+  form.setDestination(FormApp.DestinationType.SPREADSHEET, sheet.getId());
+
+  Logger.log('Dla uczestników: %s\nEdycja: %s\nWyniki: %s', form.getPublishedUrl(), form.getEditUrl(), sheet.getUrl());
 }
 
 // Quiz w kolejności prelekcji (tytuły części to tytuły slajdów), a potem pokazu NOMAD.
@@ -335,14 +289,6 @@ function jednokrotny(form, tytul, odpowiedzi) {
     .setRequired(true);
 }
 
-function skala(form, tytul, od, doo) {
-  form.addScaleItem()
-    .setTitle(tytul)
-    .setBounds(1, 5)
-    .setLabels(od, doo)
-    .setRequired(true);
-}
-
 // Odpowiedź zapisana jako [tekst, true] jest poprawna
 function pytanieQuizowe(form, tytul, odpowiedzi) {
   const item = form.addMultipleChoiceItem();
@@ -353,22 +299,4 @@ function pytanieQuizowe(form, tytul, odpowiedzi) {
     }))
     .setPoints(1)
     .setRequired(true);
-}
-
-// Uczestnicy widzą tylko tytuł projektu; nazwa pliku na Dysku odróżnia obie ankiety
-function nowaAnkieta(nazwaPliku) {
-  const form = FormApp.create(nazwaPliku).setTitle(TYTUL);
-  DriveApp.getFileById(form.getId()).setName(nazwaPliku);
-  return form
-    .setCollectEmail(false)
-    .setAllowResponseEdits(false)
-    .setProgressBar(true)
-    .setConfirmationMessage('Dziękujemy! Twoja odpowiedź została zapisana.');
-}
-
-// Odpowiedzi trafiają do arkusza Google, z którego zrobisz zestawienie wyników do sprawozdania
-function arkusz(form) {
-  const sheet = SpreadsheetApp.create(DriveApp.getFileById(form.getId()).getName() + ' (odpowiedzi)');
-  form.setDestination(FormApp.DestinationType.SPREADSHEET, sheet.getId());
-  return sheet;
 }
