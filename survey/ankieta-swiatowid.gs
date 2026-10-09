@@ -45,7 +45,7 @@ function quiz(form) {
   pytanieQuizowe(form, 'W listopadzie i grudniu 2024 r. na dnie Bałtyku uszkodzono kilka podmorskich kabli internetowych, m.in. między Finlandią a Niemcami. Większość użytkowników nie zauważyła przerwy. Dlaczego?', [
     'Bo ruch automatycznie przejęły satelity na niskiej orbicie, takie jak Starlink',
     ['Bo ruch przekierowano innymi kablami; region z jednym połączeniem straciłby łączność', true],
-    'Bo na czas naprawy operatorzy przełączyli klientów na sieci komórkowe 5G',
+    'Bo dane czekały w kolejce i dotarły z opóźnieniem dopiero po naprawie kabli',
     'Bo uszkodzone były tylko kable zapasowe, które na co dzień nie przesyłały ruchu',
   ]);
 
@@ -217,18 +217,18 @@ function quiz(form) {
     'Około 80 GB',
   ]);
 
-  pytanieQuizowe(form, 'Czy NOMAD zadziała podczas awarii prądu?', [
-    'Tak, bo wszystkie treści są zapisane na dysku',
-    'Tak, przez kilka godzin, dzięki wbudowanej baterii',
-    ['Tylko z zasilaniem awaryjnym, np. z UPS-a lub powerbanku', true],
-    'Tak, ale tylko na telefonach, bo mają własną baterię',
+  pytanieQuizowe(form, 'Czy pokazywany zestaw, czyli mini PC z NOMAD i laptop z modelem AI, zadziała podczas awarii prądu?', [
+    'Tak, bo wszystkie treści są zapisane na dysku mini PC',
+    'Tak, bo mini PC ma wbudowaną baterię na kilka godzin',
+    ['Laptop wytrzyma na swojej baterii, ale mini PC potrzebuje zasilania awaryjnego, np. UPS-a lub powerbanku', true],
+    'Tak, ale działać będzie tylko asystent AI, bo laptop ma baterię',
   ]);
 
-  pytanieQuizowe(form, 'Co oznacza, że oprogramowanie jest open source?', [
-    'Każdy może zmieniać treści na cudzym serwerze z tym programem',
-    ['Kod jest publiczny; każdy może go bezpłatnie pobrać, sprawdzić i używać', true],
-    'Program jest darmowy, ale jego kod pozostaje tajny',
-    'Kod jest publiczny, ale używać go mogą tylko szkoły i urzędy',
+  pytanieQuizowe(form, 'W pokazywanym zestawie mini PC z NOMAD jest połączony z laptopem kablem Ethernet. Po co?', [
+    'Żeby laptop zasilał mini PC przez kabel sieciowy',
+    'Żeby mini PC przy każdym pytaniu pobierał odpowiedź z chmury przez laptop',
+    ['Żeby NOMAD na mini PC korzystał z modelu AI na laptopie, nawet gdy nie ma internetu', true],
+    'Żeby laptop mógł zdalnie wyłączyć mini PC podczas awarii',
   ]);
 }
 
