@@ -78,10 +78,10 @@ function quiz(form) {
   ]);
 
   pytanieQuizowe(form, 'Czym jest Project NOMAD?', [
-    'Aplikacją na telefon, która zapisuje odwiedzane strony internetowe do czytania offline',
+    'Otwartą aplikacją na telefon, która zapisuje odwiedzane strony do czytania offline',
     ['Otwartym oprogramowaniem, które zmienia komputer w lokalny serwer wiedzy działający bez internetu', true],
-    'Siecią serwerów w różnych krajach, która zastępuje zwykły internet podczas awarii',
-    'Przeglądarką internetową z wbudowaną kopią najpopularniejszych stron świata',
+    'Otwartą siecią serwerów w różnych krajach, która zastępuje internet podczas awarii',
+    'Otwartą przeglądarką z kopią najpopularniejszych stron, działającą bez internetu',
   ]);
 
   pytanieQuizowe(form, 'Zaczyna się powódź i znika internet. Ktoś po raz pierwszy uruchamia NOMAD, żeby znaleźć instrukcję pierwszej pomocy. Co się stanie?', [
@@ -105,32 +105,11 @@ function quiz(form) {
     'Każde urządzenie, ale tylko wtedy, gdy działa internet',
   ]);
 
-  pytanieQuizowe(form, 'W jakiej kolejności NOMAD przygotowuje materiały do wyszukiwania semantycznego?', [
-    'Wybór materiałów → obliczenie embeddingów → podział tekstu na fragmenty',
-    ['Wybór materiałów → wydobycie tekstu i podział na fragmenty → obliczenie embeddingów', true],
-    'Wydobycie tekstu → obliczenie embeddingów całych dokumentów → podział na fragmenty',
-    'Podział tekstu na fragmenty → wybór materiałów → obliczenie embeddingów',
-  ]);
-
-  pytanieQuizowe(form, 'Dlaczego NOMAD dzieli długie poradniki na krótkie fragmenty, zanim obliczy embeddingi?', [
-    'Żeby baza wiedzy zajmowała mniej miejsca na dysku',
-    'Bo krótkie fragmenty szybciej wyświetlają się w przeglądarce',
-    ['Bo wektor całego poradnika mieszałby wiele tematów, a krótki fragment ma jedno znaczenie', true],
-    'Bo model embeddingowy nie potrafi czytać tekstów dłuższych niż jedno zdanie',
-  ]);
-
   pytanieQuizowe(form, 'Czym jest embedding, który tworzy model embeddingowy?', [
+    'Wektorem liczb opisującym długość tekstu i liczbę słów',
+    'Wektorem liczb z numerami stron, na których występuje tekst',
+    ['Wektorem liczb opisującym znaczenie tekstu', true],
     'Listą słów kluczowych wybranych z tekstu',
-    'Streszczeniem tekstu przygotowanym przez AI',
-    'Skompresowaną kopią tekstu',
-    ['Wektorem liczb, który zapisuje znaczenie tekstu', true],
-  ]);
-
-  pytanieQuizowe(form, 'Kiedy NOMAD oblicza embedding pytania zadanego przez ucznia?', [
-    'Nigdy, bo pytanie porównuje bezpośrednio z tekstem poradników',
-    ['W chwili zadania pytania; embeddingi poradników są policzone wcześniej', true],
-    'Raz dziennie, razem z embeddingami wszystkich poradników',
-    'Dopiero po tym, jak model językowy napisze odpowiedź',
   ]);
 
   pytanieQuizowe(form, 'Na czym polega wyszukiwanie semantyczne?', [
@@ -140,18 +119,39 @@ function quiz(form) {
     'Na szukaniu fragmentów najczęściej czytanych przez innych użytkowników',
   ]);
 
-  pytanieQuizowe(form, 'Uczeń pyta: „co robić, gdy ktoś mocno krwawi?”, a w poradniku jest fragment „tamowanie krwotoku”. Dlaczego NOMAD go znajdzie?', [
-    'Bo wektory pytania i fragmentu są prostopadłe, więc ich podobieństwo kosinusowe wynosi 1',
-    'Bo wektory pytania i fragmentu mają taką samą długość',
-    ['Bo wektory pytania i fragmentu tworzą mały kąt, więc ich podobieństwo kosinusowe jest bliskie 1', true],
-    'Bo NOMAD ma słownik, w którym „krwawi” przypisano do „krwotoku”',
+  pytanieQuizowe(form, 'W jakiej kolejności NOMAD przygotowuje materiały do wyszukiwania semantycznego?', [
+    'Wybór materiałów → obliczenie embeddingów → podział tekstu na fragmenty',
+    ['Wybór materiałów → wydobycie tekstu i podział na fragmenty → obliczenie embeddingów', true],
+    'Wydobycie tekstu → obliczenie embeddingów całych dokumentów → podział na fragmenty',
+    'Podział tekstu na fragmenty → wybór materiałów → obliczenie embeddingów',
+  ]);
+
+  pytanieQuizowe(form, 'Dlaczego NOMAD dzieli długie poradniki na krótkie fragmenty?', [
+    'Żeby baza wiedzy zajmowała mniej miejsca na dysku',
+    'Bo krótkie fragmenty szybciej wyświetlają się w przeglądarce',
+    ['Bo długi poradnik porusza wiele tematów, a krótki fragment łatwiej dopasować do jednego pytania', true],
+    'Bo model embeddingowy nie potrafi czytać tekstów dłuższych niż jedno zdanie',
+  ]);
+
+  pytanieQuizowe(form, 'Kiedy NOMAD oblicza embedding pytania zadanego przez ucznia?', [
+    'Nigdy, bo pytanie porównuje bezpośrednio z tekstem poradników',
+    ['W chwili zadania pytania; embeddingi poradników są policzone wcześniej', true],
+    'Raz dziennie, razem z embeddingami wszystkich poradników',
+    'Dopiero po tym, jak model językowy napisze odpowiedź',
+  ]);
+
+  pytanieQuizowe(form, 'Uczeń pyta, jak zatamować krwotok. Jak NOMAD wybiera fragment poradnika, który najlepiej pasuje do pytania?', [
+    'Wybiera fragment, którego wektor jest prostopadły do wektora pytania, bo wtedy podobieństwo kosinusowe wynosi 1',
+    'Wybiera fragment, którego wektor ma największą długość',
+    ['Wybiera fragment, którego wektor tworzy z wektorem pytania najmniejszy kąt, bo wtedy podobieństwo kosinusowe jest najbliższe 1', true],
+    'Wybiera fragment, w którym najczęściej powtarza się słowo „krwotok”',
   ]);
 
   pytanieQuizowe(form, 'Czym jest duży model językowy (LLM) i jak tworzy odpowiedź?', [
-    'To baza gotowych odpowiedzi, z której wybiera najlepiej pasującą',
-    'To wyszukiwarka, która przepisuje odpowiedź z najlepszej strony',
+    'To baza gotowych odpowiedzi, którą przeszukuje po tokenach',
+    'To wyszukiwarka, która składa odpowiedź z tokenów najlepszej strony',
     ['To sieć neuronowa, która przewiduje po kolei najbardziej prawdopodobne tokeny', true],
-    'To program z regułami gramatyki, który układa zdania według zasad języka',
+    'To program z regułami gramatyki, który łączy tokeny według zasad języka',
   ]);
 
   pytanieQuizowe(form, 'Model dzieli słowo „krwotokiem” na tokeny, czyli fragmenty, np. „krwo”, „tok”, „iem”. Dlaczego pomaga to przy polskiej odmianie wyrazów?', [
@@ -164,7 +164,7 @@ function quiz(form) {
   pytanieQuizowe(form, 'Czym lokalny model językowy różni się od dużego modelu w chmurze, np. najnowszego ChatGPT?', [
     'Jest dokładniejszy, bo ma mniej parametrów i rzadziej się rozprasza',
     'Działa bez internetu, ale odpowiada tylko po angielsku',
-    ['Działa bez internetu i prywatnie, ale ma mniej parametrów, więc częściej się myli', true],
+    ['Działa bez internetu, ale ma mniej parametrów, więc częściej się myli', true],
     'Ma tyle samo parametrów, ale działa wolniej, bo nie korzysta z chmury',
   ]);
 
@@ -175,11 +175,11 @@ function quiz(form) {
     'LLM zamienia pytanie na wektor, a model embeddingowy sprawdza fakty w odpowiedzi',
   ]);
 
-  pytanieQuizowe(form, 'NOMAD przekazuje modelowi AI tylko kilka najlepiej dopasowanych fragmentów (domyślnie 5), a nie całą bazę wiedzy. Dlaczego?', [
+  pytanieQuizowe(form, 'Dlaczego model AI w NOMAD nie może przeczytać naraz całej bazy wiedzy?', [
     'Bo przesłanie całej bazy przez sieć lokalną trwałoby kilka godzin',
     ['Bo model mieści naraz ograniczoną liczbę tokenów, czyli tzw. okno kontekstu', true],
-    'Bo resztę bazy wiedzy model zna już z treningu',
-    'Bo model sam dopyta o resztę fragmentów, jeśli będzie ich potrzebował',
+    'Bo model czyta tylko teksty napisane po angielsku',
+    'Bo baza wiedzy jest zapisana w formacie, którego model nie otwiera',
   ]);
 
   pytanieQuizowe(form, 'Uczeń pyta asystenta AI w NOMAD o swoje objawy chorobowe. Co dzieje się z tym pytaniem?', [
@@ -196,11 +196,11 @@ function quiz(form) {
     'Indeksowanie: model trafił na błędny fragment w bazie wiedzy',
   ]);
 
-  pytanieQuizowe(form, 'Jak NOMAD zmniejsza ryzyko halucynacji asystenta AI?', [
-    'Douczy model na szkolnych dokumentach przy każdym pytaniu',
-    'Sprawdza każdą odpowiedź drugim, większym modelem',
-    ['Daje modelowi pasujące fragmenty z bazy wiedzy jako podstawę odpowiedzi', true],
-    'Skraca odpowiedzi, bo krótsze rzadziej zawierają błędy',
+  pytanieQuizowe(form, 'Asystent AI w NOMAD podał dawkowanie leku. Co warto zrobić?', [
+    'Zaufać mu, bo odpowiedź oparta na bazie wiedzy jest zawsze poprawna',
+    'Zapytać drugi raz, bo jeśli odpowiedź się powtórzy, to jest prawdziwa',
+    ['Sprawdzić ją w źródle, do którego odsyła asystent', true],
+    'Zignorować ją, bo lokalne modele zawsze podają błędne dawki',
   ]);
 
   pytanieQuizowe(form, 'Na laptopie działa program Ollama z modelem Qwen3 8B. Co jest prawdą?', [
@@ -210,22 +210,22 @@ function quiz(form) {
     'Ollama to model embeddingowy, a „8B” oznacza 8 miliardów słów w danych uczących',
   ]);
 
-  pytanieQuizowe(form, 'Podczas pokazu odłączamy internet od przygotowanego wcześniej NOMAD. Co przestanie działać?', [
-    'Wikipedia i poradniki',
-    'Asystent AI z lokalnym modelem',
-    'Mapy offline',
-    ['Pobieranie nowych treści i aktualizacji', true],
+  pytanieQuizowe(form, 'Ile miejsca na dysku zajmuje polska Wikipedia bez obrazków pobrana do NOMAD?', [
+    'Około 80 MB',
+    'Około 800 MB',
+    ['Około 8 GB', true],
+    'Około 80 GB',
   ]);
 
   pytanieQuizowe(form, 'Czy NOMAD zadziała podczas awarii prądu?', [
     'Tak, bo wszystkie treści są zapisane na dysku',
     'Tak, przez kilka godzin, dzięki wbudowanej baterii',
     ['Tylko z zasilaniem awaryjnym, np. z UPS-a lub powerbanku', true],
-    'Działa tylko asystent AI, bo model jest na laptopie z baterią',
+    'Tak, ale tylko na telefonach, bo mają własną baterię',
   ]);
 
-  pytanieQuizowe(form, 'Co oznacza, że NOMAD jest otwartym oprogramowaniem (open source)?', [
-    'Każdy może zmieniać treści na cudzym serwerze NOMAD',
+  pytanieQuizowe(form, 'Co oznacza, że oprogramowanie jest open source?', [
+    'Każdy może zmieniać treści na cudzym serwerze z tym programem',
     ['Kod jest publiczny; każdy może go bezpłatnie pobrać, sprawdzić i używać', true],
     'Program jest darmowy, ale jego kod pozostaje tajny',
     'Kod jest publiczny, ale używać go mogą tylko szkoły i urzędy',
