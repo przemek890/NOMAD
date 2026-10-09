@@ -45,8 +45,8 @@ function quiz(form) {
   pytanieQuizowe(form, 'W listopadzie i grudniu 2024 r. na dnie Bałtyku uszkodzono kilka podmorskich kabli internetowych, m.in. między Finlandią a Niemcami. Większość użytkowników nie zauważyła przerwy. Dlaczego?', [
     'Bo ruch automatycznie przejęły satelity na niskiej orbicie, takie jak Starlink',
     ['Bo ruch przekierowano innymi kablami; region z jednym połączeniem straciłby łączność', true],
-    'Bo uszkodzone kable przesyłały wyłącznie energię elektryczną, a nie dane internetowe',
-    'Bo podwodne roboty operatorów naprawiły uszkodzone kable w ciągu kilku minut',
+    'Bo na czas naprawy operatorzy przełączyli klientów na sieci komórkowe 5G',
+    'Bo uszkodzone były tylko kable zapasowe, które na co dzień nie przesyłały ruchu',
   ]);
 
   pytanieQuizowe(form, 'Którędy przepływa zdecydowana większość danych internetowych między kontynentami?', [
