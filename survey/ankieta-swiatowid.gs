@@ -49,29 +49,29 @@ function quiz(form) {
     'Bo uszkodzone były tylko kable zapasowe, które na co dzień nie przesyłały ruchu',
   ]);
 
-  pytanieQuizowe(form, 'Którędy przepływa zdecydowana większość danych internetowych między kontynentami?', [
-    'Przez satelity na niskiej orbicie, np. Starlink',
-    ['Przez podmorskie kable światłowodowe', true],
-    'Przez lądowe światłowody biegnące przez Azję',
-    'Przez radiolinie łączące sieci komórkowe',
+  pytanieQuizowe(form, 'Ile zwykle trwa naprawa uszkodzonego kabla podmorskiego?', [
+    'Kilka minut, bo sieć sama przełącza się na zapasową żyłę w kablu',
+    'Kilka godzin, bo kabel naprawiają nurkowie',
+    ['Od kilku dni do kilku tygodni, bo potrzebny jest specjalny statek kablowy', true],
+    'Kilka lat, bo trzeba położyć zupełnie nowy kabel',
   ]);
 
   pytanieQuizowe(form, 'W grudniu 2023 r. hakerzy zaatakowali systemy komputerowe Kyivstar, największego operatora sieci komórkowej na Ukrainie. Kable i maszty były sprawne, a mimo to miliony klientów na kilka dni straciły telefon i internet. Dlaczego?', [
     'Bo hakerzy zdalnie odcięli zasilanie wszystkich masztów w całym kraju naraz',
     'Bo hakerzy zainfekowali wirusem telefony wszystkich klientów operatora',
     ['Bo maszty obsługują telefony tylko dzięki centralnym systemom operatora, które przestały działać', true],
-    'Bo atak przeciążył satelity, przez które maszty łączą się z resztą sieci',
+    'Bo operator sam wyłączył sieć, żeby hakerzy nie dostali się do telefonów klientów',
   ]);
 
   pytanieQuizowe(form, '28 kwietnia 2025 r. Hiszpania i Portugalia straciły prąd. Dlaczego po kilku godzinach przestał działać także internet w telefonach?', [
     'Bo operatorzy wyłączyli sieć, żeby oszczędzać energię dla szpitali',
     'Bo telefony same wyłączyły transmisję danych, żeby oszczędzać baterię',
     ['Bo stacje bazowe sieci komórkowej mają zasilanie awaryjne tylko na kilka godzin', true],
-    'Bo awaria prądu uszkodziła podmorskie kable światłowodowe',
+    'Bo bez prądu przestały działać satelity GPS, z których korzystają sieci komórkowe',
   ]);
 
   pytanieQuizowe(form, 'Czym jest DNS i co się dzieje podczas jego awarii?', [
-    'To system zasilania serwerowni; podczas awarii serwery stron wyłączają się i przestają odpowiadać',
+    'To serwer, na którym zapisane są wszystkie strony; podczas awarii strony znikają z internetu',
     ['To system zamiany nazw stron na adresy IP; podczas awarii strony działają, ale nie da się ich znaleźć po nazwie', true],
     'To system szyfrowania połączeń; podczas awarii dane płyną przez internet zupełnie bez szyfrowania',
     'To system wyznaczania tras między sieciami; podczas awarii ruch trafia w niewłaściwe miejsce',
@@ -93,7 +93,7 @@ function quiz(form) {
 
   pytanieQuizowe(form, 'Której funkcji NIE ma w NOMAD?', [
     'Map offline do orientacji w terenie',
-    'Narzędzi do kodowania i przetwarzania danych',
+    'Notatek',
     'Kursów i materiałów edukacyjnych do nauki',
     ['Łączenia z internetem przez satelitę', true],
   ]);
@@ -114,7 +114,7 @@ function quiz(form) {
 
   pytanieQuizowe(form, 'Dlaczego NOMAD dzieli długie poradniki na krótkie fragmenty, zanim obliczy embeddingi?', [
     'Żeby baza wiedzy zajmowała mniej miejsca na dysku',
-    'Żeby każdy fragment mógł trafić na inny komputer w sieci',
+    'Bo krótkie fragmenty szybciej wyświetlają się w przeglądarce',
     ['Bo wektor całego poradnika mieszałby wiele tematów, a krótki fragment ma jedno znaczenie', true],
     'Bo model embeddingowy nie potrafi czytać tekstów dłuższych niż jedno zdanie',
   ]);
@@ -144,7 +144,7 @@ function quiz(form) {
     'Bo wektory pytania i fragmentu są prostopadłe, więc ich podobieństwo kosinusowe wynosi 1',
     'Bo wektory pytania i fragmentu mają taką samą długość',
     ['Bo wektory pytania i fragmentu tworzą mały kąt, więc ich podobieństwo kosinusowe jest bliskie 1', true],
-    'Bo pytanie i fragment mają tyle samo słów',
+    'Bo NOMAD ma słownik, w którym „krwawi” przypisano do „krwotoku”',
   ]);
 
   pytanieQuizowe(form, 'Czym jest duży model językowy (LLM) i jak tworzy odpowiedź?', [
@@ -163,7 +163,7 @@ function quiz(form) {
 
   pytanieQuizowe(form, 'Czym lokalny model językowy różni się od dużego modelu w chmurze, np. najnowszego ChatGPT?', [
     'Jest dokładniejszy, bo ma mniej parametrów i rzadziej się rozprasza',
-    'Działa bez internetu, ale dłuższe odpowiedzi pobiera z chmury',
+    'Działa bez internetu, ale odpowiada tylko po angielsku',
     ['Działa bez internetu i prywatnie, ale ma mniej parametrów, więc częściej się myli', true],
     'Ma tyle samo parametrów, ale działa wolniej, bo nie korzysta z chmury',
   ]);
@@ -178,7 +178,7 @@ function quiz(form) {
   pytanieQuizowe(form, 'NOMAD przekazuje modelowi AI tylko kilka najlepiej dopasowanych fragmentów (domyślnie 5), a nie całą bazę wiedzy. Dlaczego?', [
     'Bo przesłanie całej bazy przez sieć lokalną trwałoby kilka godzin',
     ['Bo model mieści naraz ograniczoną liczbę tokenów, czyli tzw. okno kontekstu', true],
-    'Bo pozostałe fragmenty są zaszyfrowane i model nie może ich odczytać',
+    'Bo resztę bazy wiedzy model zna już z treningu',
     'Bo model sam dopyta o resztę fragmentów, jeśli będzie ich potrzebował',
   ]);
 
@@ -221,7 +221,7 @@ function quiz(form) {
     'Tak, bo wszystkie treści są zapisane na dysku',
     'Tak, przez kilka godzin, dzięki wbudowanej baterii',
     ['Tylko z zasilaniem awaryjnym, np. z UPS-a lub powerbanku', true],
-    'Tylko mapy, bo nie wymagają obliczeń',
+    'Działa tylko asystent AI, bo model jest na laptopie z baterią',
   ]);
 
   pytanieQuizowe(form, 'Co oznacza, że NOMAD jest otwartym oprogramowaniem (open source)?', [
