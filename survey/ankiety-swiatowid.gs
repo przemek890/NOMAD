@@ -13,6 +13,7 @@
  * ile osób odpowiedziało poprawnie na każde pytanie.
  */
 
+const TYTUL = 'Projekt Światowid — wiedza kryzysowa';
 const TAK_NIE_4 = ['Zdecydowanie tak', 'Raczej tak', 'Raczej nie', 'Zdecydowanie nie'];
 
 function utworzAnkiety() {
@@ -26,12 +27,7 @@ function utworzAnkiety() {
 
 // Przed prelekcją: punkt wyjścia do porównania i wybór treści do biblioteki offline (wniosek, s. 6)
 function ankietaPrzed() {
-  const form = nowaAnkieta(
-    'Światowid — ankieta przed prelekcją',
-    'Krótka, anonimowa ankieta przed prelekcją „Światowid — wiedza kryzysowa” w I LO w Tarnowie. ' +
-    'Pomoże nam dopasować prelekcję i wybrać treści do biblioteki wiedzy działającej bez internetu, ' +
-    'która zostanie w szkole. Zajmie 2 minuty.'
-  );
+  const form = nowaAnkieta('Światowid — przed prelekcją');
 
   metryczka(form);
 
@@ -76,10 +72,7 @@ function ankietaPrzed() {
 
 // Po prelekcji: metryczka, 30 pytań wiedzowych w kolejności prelekcji i na końcu pytanie o rezultaty z wniosku
 function ankietaPo() {
-  const form = nowaAnkieta(
-    'Światowid — ankieta po prelekcji',
-    'Krótka, anonimowa ankieta po prelekcji „Światowid — wiedza kryzysowa”. Dziękujemy za udział! Zajmie około 6 minut.'
-  ).setIsQuiz(true);
+  const form = nowaAnkieta('Światowid — po prelekcji').setIsQuiz(true);
 
   metryczka(form);
   quiz(form);
@@ -362,9 +355,11 @@ function pytanieQuizowe(form, tytul, odpowiedzi) {
     .setRequired(true);
 }
 
-function nowaAnkieta(tytul, opis) {
-  return FormApp.create(tytul)
-    .setDescription(opis)
+// Uczestnicy widzą tylko tytuł projektu; nazwa pliku na Dysku odróżnia obie ankiety
+function nowaAnkieta(nazwaPliku) {
+  const form = FormApp.create(nazwaPliku).setTitle(TYTUL);
+  DriveApp.getFileById(form.getId()).setName(nazwaPliku);
+  return form
     .setCollectEmail(false)
     .setAllowResponseEdits(false)
     .setProgressBar(true)
@@ -373,7 +368,7 @@ function nowaAnkieta(tytul, opis) {
 
 // Odpowiedzi trafiają do arkusza Google, z którego zrobisz zestawienie wyników do sprawozdania
 function arkusz(form) {
-  const sheet = SpreadsheetApp.create(form.getTitle() + ' (odpowiedzi)');
+  const sheet = SpreadsheetApp.create(DriveApp.getFileById(form.getId()).getName() + ' (odpowiedzi)');
   form.setDestination(FormApp.DestinationType.SPREADSHEET, sheet.getId());
   return sheet;
 }
