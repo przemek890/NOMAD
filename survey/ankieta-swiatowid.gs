@@ -11,7 +11,6 @@ function utworzAnkiete() {
   metryczka(form);
   quiz(form);
 
-  form.addSectionHeaderItem().setTitle('Na koniec');
   jednokrotny(form, 'Czy prelekcja zwiększyła Twoją wiedzę i świadomość o tym, jak zachować dostęp do ważnych informacji w sytuacjach kryzysowych?',
     TAK_NIE_4);
 
@@ -22,8 +21,6 @@ function utworzAnkiete() {
 }
 
 function quiz(form) {
-  sekcja(form, 'Danych przybywa na świecie', 3);
-
   pytanieQuizowe(form, 'Ile razy według prognozy wzrośnie ilość danych w cyfrowym obiegu między 2024 a 2028 rokiem?', [
     '1,6 raza',
     ['2,6 raza', true],
@@ -44,8 +41,6 @@ function quiz(form) {
     ['1 000 000 000 000 GB', true],
     '1 000 000 000 000 000 GB',
   ]);
-
-  sekcja(form, 'W każdej chwili możemy stracić do nich dostęp', 5);
 
   pytanieQuizowe(form, 'W listopadzie i grudniu 2024 r. na dnie Bałtyku uszkodzono kilka podmorskich kabli internetowych, m.in. między Finlandią a Niemcami. Większość użytkowników nie zauważyła przerwy. Dlaczego?', [
     'Bo ruch automatycznie przejęły satelity na niskiej orbicie, takie jak Starlink',
@@ -82,8 +77,6 @@ function quiz(form) {
     'To system wyznaczania tras między sieciami; podczas awarii ruch trafia w niewłaściwe miejsce',
   ]);
 
-  sekcja(form, 'W kryzysie informacja jest cenna', 4);
-
   pytanieQuizowe(form, 'Czym jest Project NOMAD?', [
     'Aplikacją na telefon, która zapisuje odwiedzane strony internetowe do czytania offline',
     ['Otwartym oprogramowaniem, które zmienia komputer w lokalny serwer wiedzy działający bez internetu', true],
@@ -111,8 +104,6 @@ function quiz(form) {
     ['Każde urządzenie w tej samej sieci lokalnej, przez przeglądarkę', true],
     'Każde urządzenie, ale tylko wtedy, gdy działa internet',
   ]);
-
-  sekcja(form, 'Wyszukiwanie semantyczne', 6);
 
   pytanieQuizowe(form, 'W jakiej kolejności NOMAD przygotowuje materiały do wyszukiwania semantycznego?', [
     'Wybór materiałów → obliczenie embeddingów → podział tekstu na fragmenty',
@@ -155,8 +146,6 @@ function quiz(form) {
     ['Bo wektory pytania i fragmentu tworzą mały kąt, więc ich podobieństwo kosinusowe jest bliskie 1', true],
     'Bo pytanie i fragment mają tyle samo słów',
   ]);
-
-  sekcja(form, 'Lokalny model AI', 8);
 
   pytanieQuizowe(form, 'Czym jest duży model językowy (LLM) i jak tworzy odpowiedź?', [
     'To baza gotowych odpowiedzi, z której wybiera najlepiej pasującą',
@@ -214,8 +203,6 @@ function quiz(form) {
     'Skraca odpowiedzi, bo krótsze rzadziej zawierają błędy',
   ]);
 
-  sekcja(form, 'Zestaw demonstracyjny i pokaz NOMAD', 4);
-
   pytanieQuizowe(form, 'Na laptopie działa program Ollama z modelem Qwen3 8B. Co jest prawdą?', [
     'Ollama to model firmy Meta, a „8B” oznacza 8 bilionów parametrów',
     'Ollama pobiera odpowiedzi z chmury, a „8B” oznacza 8 GB pamięci',
@@ -243,12 +230,6 @@ function quiz(form) {
     'Program jest darmowy, ale jego kod pozostaje tajny',
     'Kod jest publiczny, ale używać go mogą tylko szkoły i urzędy',
   ]);
-}
-
-function sekcja(form, tytul, liczba) {
-  form.addSectionHeaderItem()
-    .setTitle(tytul)
-    .setHelpText(liczba + (liczba >= 2 && liczba <= 4 ? ' pytania' : ' pytań') + '. W każdym tylko jedna odpowiedź jest poprawna.');
 }
 
 function metryczka(form) {
